@@ -5,6 +5,21 @@
 -- ============================================================
 
 -- ============================================================
+-- FULL RESET: Clear all existing team attempts, violations, & states
+-- ============================================================
+TRUNCATE TABLE round3_bonus_attempts CASCADE;
+TRUNCATE TABLE round3_vault_attempts CASCADE;
+TRUNCATE TABLE round3_mission_attempts CASCADE;
+TRUNCATE TABLE round3_team_state CASCADE;
+TRUNCATE TABLE round2_results CASCADE;
+TRUNCATE TABLE round2_bids CASCADE;
+TRUNCATE TABLE round2_team_state CASCADE;
+TRUNCATE TABLE round1_answers CASCADE;
+TRUNCATE TABLE round1_attempts CASCADE;
+TRUNCATE TABLE anti_cheat_violations CASCADE;
+TRUNCATE TABLE teams CASCADE;
+
+-- ============================================================
 -- SAMPLE TEAMS
 -- ============================================================
 INSERT INTO teams (team_name, leader_name, leader_reg_no) VALUES
@@ -193,5 +208,5 @@ CREATE POLICY "competition_settings_insert_all" ON competition_settings FOR INSE
 
 -- Reset competition_settings to clean single row with Round 1 Active
 DELETE FROM competition_settings;
-INSERT INTO competition_settings (round1_active, round2_active, current_round2_question, show_round1_explanations)
-VALUES (TRUE, FALSE, 1, FALSE);
+INSERT INTO competition_settings (round1_active, round2_active, round3_active, current_round2_question, show_round1_explanations, round3_initialized, round3_results_published)
+VALUES (TRUE, FALSE, FALSE, 1, FALSE, FALSE, FALSE);
