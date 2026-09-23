@@ -25,7 +25,8 @@ export interface Round1Question {
   option_b: string;
   option_c: string;
   option_d: string;
-  // correct_option is NEVER sent to client — admin only
+  correct_option?: 'A' | 'B' | 'C' | 'D';
+  explanation?: string;
   is_active: boolean;
   created_at: string;
   updated_at: string;

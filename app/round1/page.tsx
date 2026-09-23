@@ -109,6 +109,18 @@ export default function Round1Page() {
     };
 
     init();
+
+    const supabase = createClient();
+    const channel = supabase
+      .channel('public:competition_settings:r1_page')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'competition_settings' }, () => {
+        init();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [session, router]);
 
   // Timer Countdown

@@ -70,7 +70,20 @@ export default function Header({ activePath }: HeaderProps) {
         // Fallback
       }
     };
+
     fetchActiveRound();
+
+    const supabase = createClient();
+    const channel = supabase
+      .channel('public:competition_settings:header')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'competition_settings' }, () => {
+        fetchActiveRound();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   // Click outside listener for popover

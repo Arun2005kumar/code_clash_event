@@ -54,16 +54,26 @@ export default function Round2Page() {
       .maybeSingle();
 
     if (!settings?.round2_active) {
+      setTeamState(null);
       setLoading(false);
       return;
     }
 
     // Get team state
-    const { data: state } = await supabase
+    let { data: state } = await supabase
       .from('round2_team_state')
       .select('*')
       .eq('team_id', session.teamId)
-      .single();
+      .maybeSingle();
+
+    if (!state && settings.round2_active) {
+      const { data: newState } = await supabase
+        .from('round2_team_state')
+        .insert([{ team_id: session.teamId, score: 0, coins: 100, current_question: 1, status: 'waiting' }])
+        .select('*')
+        .maybeSingle();
+      state = newState;
+    }
 
     if (state) {
       if (state.score > prevScore.current) {
