@@ -19,8 +19,8 @@ export default function Round2Page() {
   const [session, setSession] = useState<ReturnType<typeof getTeamSession>>(null);
   const [teamState, setTeamState] = useState<Round2TeamState | null>(null);
   const [currentQuestion, setCurrentQuestion] = useState<Round2Question | null>(null);
-  const [selectedOption, setSelectedOption] = useState<Option>('B');
-  const [selectedBid, setSelectedBid] = useState<BidAmount>(5);
+  const [selectedOption, setSelectedOption] = useState<Option>('A');
+  const [selectedBid, setSelectedBid] = useState<BidAmount>(4);
   const [bidStatus, setBidStatus] = useState<BidStatus>('idle');
   const [myBid, setMyBid] = useState<Round2Bid | null>(null);
   const [loading, setLoading] = useState(true);
@@ -100,7 +100,7 @@ export default function Round2Page() {
         .select('*')
         .eq('team_id', session.teamId)
         .eq('question_id', q.id)
-        .single();
+        .maybeSingle();
 
       if (existingBid) {
         setMyBid(existingBid);
@@ -109,8 +109,8 @@ export default function Round2Page() {
         setBidStatus('placed');
       } else {
         setMyBid(null);
-        setSelectedOption('B');
-        setSelectedBid(5);
+        setSelectedOption('A');
+        setSelectedBid(4);
         setBidStatus('idle');
       }
     }
@@ -133,6 +133,7 @@ export default function Round2Page() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'round2_team_state', filter: `team_id=eq.${session.teamId}` }, () => { loadState(); })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'competition_settings' }, () => { loadState(); })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'round2_questions' }, () => { loadState(); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'round2_bids', filter: `team_id=eq.${session.teamId}` }, () => { loadState(); })
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
@@ -147,11 +148,13 @@ export default function Round2Page() {
   }, []);
 
   const handlePlaceBid = async () => {
-    if (!session || !currentQuestion || !selectedOption || !selectedBid) {
-      toast.error('Please select an answer option AND a bid amount!');
+    if (!session || !currentQuestion) {
+      toast.error('Session or question data not available.');
       return;
     }
-    if (bidStatus !== 'idle') return;
+
+    const opt = selectedOption || 'A';
+    const bid = selectedBid || 4;
 
     setBidStatus('placing');
     const supabase = getSupabase();
@@ -159,8 +162,8 @@ export default function Round2Page() {
     const { data, error } = await supabase.rpc('place_bid', {
       p_team_id: session.teamId,
       p_question_id: currentQuestion.id,
-      p_selected_option: selectedOption,
-      p_bid_amount: selectedBid,
+      p_selected_option: opt,
+      p_bid_amount: bid,
     });
 
     if (error || !data?.[0]?.success) {
@@ -170,7 +173,7 @@ export default function Round2Page() {
     }
 
     setBidStatus('placed');
-    toast.success('BID LOCKED! 🔒 Your wager is sealed in the contract.');
+    toast.success(`🎉 BID LOCKED IN! ${bid} 🪙 wagered on Option ${opt}.`);
     loadState();
   };
 
@@ -334,7 +337,7 @@ export default function Round2Page() {
                           <button
                             key={opt}
                             type="button"
-                            disabled={bidStatus !== 'idle'}
+                            disabled={bidStatus === 'placing'}
                             onClick={() => setSelectedOption(opt)}
                             className={`answer-card text-left p-space-md rounded-xl transition-all flex items-center justify-between group cursor-pointer border-2 border-ink-primary ${
                               isSelected
@@ -424,7 +427,7 @@ export default function Round2Page() {
                     <div className="flex flex-col gap-space-md mb-space-lg" id="bid-selector-group">
                       {/* Tier 1: 1 Coin */}
                       <div
-                        onClick={() => bidStatus === 'idle' && setSelectedBid(1)}
+                        onClick={() => setSelectedBid(1)}
                         className={`bid-card cursor-pointer p-space-md rounded-xl transition-all flex items-center justify-between shadow-sm border-2 border-ink-primary ${
                           selectedBid === 1 ? 'selected-bid bg-round-2-orange/15 ring-2 ring-round-2-orange shadow-lg' : 'bg-surface-muted hover:bg-surface-container'
                         }`}
@@ -445,7 +448,7 @@ export default function Round2Page() {
 
                       {/* Tier 2: 2 Coins */}
                       <div
-                        onClick={() => bidStatus === 'idle' && setSelectedBid(2)}
+                        onClick={() => setSelectedBid(2)}
                         className={`bid-card cursor-pointer p-space-md rounded-xl transition-all flex items-center justify-between shadow-sm border-2 border-ink-primary ${
                           selectedBid === 2 ? 'selected-bid bg-round-2-orange/15 ring-2 ring-round-2-orange shadow-lg' : 'bg-surface-muted hover:bg-surface-container'
                         }`}
@@ -464,17 +467,17 @@ export default function Round2Page() {
                         </div>
                       </div>
 
-                      {/* Tier 3: 5 Coins (Selected Max Bid) */}
+                      {/* Tier 3: 4 Coins (Selected Max Bid) */}
                       <div
-                        onClick={() => bidStatus === 'idle' && setSelectedBid(5)}
+                        onClick={() => setSelectedBid(4)}
                         className={`bid-card cursor-pointer p-space-md rounded-xl transition-all flex items-center justify-between shadow-lg relative overflow-hidden border-2 border-ink-primary ${
-                          selectedBid === 5 ? 'selected-bid bg-round-2-orange/15 ring-2 ring-round-2-orange shadow-lg' : 'bg-surface-muted hover:bg-surface-container'
+                          selectedBid === 4 ? 'selected-bid bg-round-2-orange/15 ring-2 ring-round-2-orange shadow-lg' : 'bg-surface-muted hover:bg-surface-container'
                         }`}
                       >
                         <div className="absolute -right-4 -bottom-4 w-20 h-20 bg-round-2-orange/20 rounded-full blur-xl pointer-events-none"></div>
                         <div className="flex items-center gap-space-md relative z-10">
                           <div className="w-12 h-12 rounded-xl bg-round-2-orange text-on-primary flex items-center justify-center font-headline-md text-headline-md font-black shadow-md border border-ink-primary">
-                            5🪙
+                            4🪙
                           </div>
                           <div>
                             <div className="flex items-center gap-space-xs">
@@ -494,19 +497,19 @@ export default function Round2Page() {
                     <button
                       className={`w-full py-space-md px-space-lg rounded-xl font-headline-sm text-headline-sm font-black tracking-wide transition-all flex items-center justify-center gap-space-sm shadow-xl group border-2 border-ink-primary cursor-pointer ${
                         bidStatus === 'placed'
-                          ? 'bg-status-correct text-on-primary cursor-not-allowed'
+                          ? 'bg-round-2-orange hover:bg-round-2-orange/90 text-on-primary'
                           : 'bg-round-2-orange hover:bg-round-2-orange/90 active:scale-[0.98] text-on-primary'
                       }`}
                       id="lock-bid-cta"
                       onClick={handlePlaceBid}
                       type="button"
-                      disabled={bidStatus !== 'idle'}
+                      disabled={bidStatus === 'placing'}
                     >
                       <span className="material-symbols-outlined text-[26px] group-hover:-rotate-45 transition-transform">
                         {bidStatus === 'placed' ? 'task_alt' : 'gavel'}
                       </span>
                       <span id="cta-label">
-                        {bidStatus === 'placed' ? 'BID LOCKED IN CONSOLE' : `LOCK MY BID (${selectedBid} 🪙)`}
+                        {bidStatus === 'placed' ? `UPDATE MY BID (${selectedBid} 🪙)` : `LOCK MY BID (${selectedBid} 🪙)`}
                       </span>
                     </button>
 

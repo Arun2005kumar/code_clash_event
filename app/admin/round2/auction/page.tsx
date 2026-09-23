@@ -174,6 +174,17 @@ export default function AdminAuctionPage() {
   });
   const totalBids = bids.length || 1;
 
+  const handleAdvanceQuestion = async (nextQNum: number) => {
+    const supabase = getSupabase();
+    const { error } = await supabase.rpc('next_round2_question', { p_target_question: nextQNum });
+    if (error) {
+      toast.error('Failed to change question lot: ' + error.message);
+      return;
+    }
+    toast.success(`🎉 Switched live lot to Question #${nextQNum}!`);
+    loadData();
+  };
+
   return (
     <div className="flex flex-col w-full p-space-md lg:p-space-lg gap-space-lg max-w-7xl mx-auto font-body-md text-body-md text-ink-primary">
       
@@ -187,14 +198,29 @@ export default function AdminAuctionPage() {
             </span>
             <span className="px-space-sm py-0.5 rounded-full bg-surface-muted text-ink-primary font-label-sticker text-label-sticker flex items-center gap-1 shadow-sm border border-ink-primary">
               <span className="material-symbols-outlined text-[15px] text-round-1-blue">groups</span>
-              {bids.length > 0 ? bids.length : 18} Teams Connected
+              {bids.length} Teams Submitted Bids
             </span>
-            <span className="px-space-sm py-0.5 rounded-full bg-tertiary-fixed text-tertiary font-label-sticker text-label-sticker shadow-sm border border-ink-primary">
-              Question {String(currentQuestion?.question_number || 3).padStart(2, '0')} / 06
-            </span>
+            <div className="flex items-center gap-1 bg-surface-muted p-1 rounded-lg border border-ink-primary">
+              {[1, 2, 3, 4, 5, 6].map((qNum) => {
+                const isActive = (currentQuestion?.question_number || 1) === qNum;
+                return (
+                  <button
+                    key={qNum}
+                    onClick={() => handleAdvanceQuestion(qNum)}
+                    className={`px-2 py-0.5 rounded text-xs font-bold transition-all cursor-pointer border ${
+                      isActive
+                        ? 'bg-round-2-orange text-white border-ink-primary shadow-sm'
+                        : 'bg-surface-card text-ink-primary hover:bg-slate-200 border-slate-300'
+                    }`}
+                  >
+                    Q{qNum}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-          <h1 className="font-headline-lg text-headline-lg text-ink-primary tracking-tight">ROUND 2 — LIVE AUCTION ROOM</h1>
-          <p className="font-body-md text-body-md text-ink-secondary">Real-time bids are locked on hammer drop. Wagers in play for Question {String(currentQuestion?.question_number || 3).padStart(2, '0')}.</p>
+          <h1 className="font-headline-lg text-headline-lg text-ink-primary tracking-tight mt-1">ROUND 2 — LIVE AUCTION ROOM</h1>
+          <p className="font-body-md text-body-md text-ink-secondary">Real-time bids are locked on hammer drop. Active lot: Question #{String(currentQuestion?.question_number || 1).padStart(2, '0')}.</p>
         </div>
 
         {/* Quick Host Controls / Timer Widget */}

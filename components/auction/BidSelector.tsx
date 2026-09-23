@@ -13,7 +13,7 @@ interface BidSelectorProps {
   disabled?: boolean;
 }
 
-const BID_OPTIONS: BidAmount[] = [1, 2, 5];
+const BID_OPTIONS: BidAmount[] = [1, 2, 4];
 
 export default function BidSelector({ selectedBid, onSelect, availableCoins, disabled = false }: BidSelectorProps) {
   return (

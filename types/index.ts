@@ -157,7 +157,7 @@ export interface AdminUser {
 // ============================================================
 
 export type Option = 'A' | 'B' | 'C' | 'D';
-export type BidAmount = 1 | 2 | 5;
+export type BidAmount = 1 | 2 | 4;
 
 export type ViolationType =
   | 'fullscreen_exit'
