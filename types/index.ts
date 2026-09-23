@@ -276,6 +276,102 @@ export interface TeamAdminView extends Team {
   r2_status?: string;
   r2_score?: number;
   r2_coins?: number;
+  r3_status?: string;
+  r3_vault_unlocked?: boolean;
   total_violations: number;
   is_flagged: boolean;
 }
+
+// ============================================================
+// ROUND 3 TYPES
+// ============================================================
+
+export interface Round3Mission {
+  id: string;
+  mission_number: number;
+  title: string;
+  difficulty: string;
+  time_estimate: string;
+  handout_content: Round3HandoutContent;
+  clue_piece?: string;
+  is_active: boolean;
+  created_at?: string;
+}
+
+export interface Round3HandoutContent {
+  briefing: string;
+  lines?: string[];
+  receipt?: {
+    shop: string;
+    items: Array<{ name: string; price: number }>;
+    total: number;
+  };
+  evidence?: string[];
+  boxes?: Array<{ label: string; text: string }>;
+  encoded?: string[];
+  hint_text?: string;
+  strips?: string[];
+  question: string;
+  options?: string[];
+  instruction?: string;
+  final_hint?: string;
+  hints: string[];
+}
+
+export type Round3TeamStatus = 'not_started' | 'in_progress' | 'vault_open' | 'completed';
+
+export interface Round3TeamState {
+  id: string;
+  team_id: string;
+  started_at?: string;
+  completed_at?: string;
+  status: Round3TeamStatus;
+  hints_used: number;
+  finish_time_seconds?: number;
+  vault_attempts: number;
+  vault_unlocked: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface Round3MissionAttempt {
+  id: string;
+  team_id: string;
+  mission_number: number;
+  submitted_answer?: string;
+  is_correct: boolean;
+  clue_piece_revealed?: string;
+  hint_count: number;
+  attempted_at?: string;
+  completed_at?: string;
+}
+
+export interface Round3VaultAttempt {
+  id: string;
+  team_id: string;
+  entered_password: string;
+  is_correct: boolean;
+  attempted_at?: string;
+}
+
+export interface Round3BonusAttempt {
+  id: string;
+  team_id: string;
+  submitted_answer?: string;
+  is_correct: boolean;
+  attempted_at?: string;
+}
+
+export interface Round3LeaderboardEntry {
+  rank: number;
+  team_id: string;
+  team_name: string;
+  r1_score: number;
+  r2_score: number;
+  r3_status: Round3TeamStatus;
+  r3_vault_unlocked: boolean;
+  finish_time_seconds?: number;
+  hints_used: number;
+  total_score: number;
+}
+

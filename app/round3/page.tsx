@@ -1,56 +1,167 @@
 'use client';
 
-// app/round3/page.tsx — Redesigned Funny Round 3 Placeholder
+// app/round3/page.tsx — Round 3 Mission Hub
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
+import { getTeamSession } from '@/lib/auth/session';
+import AntiCheatGuard from '@/components/anti-cheat/AntiCheatGuard';
+import Header from '@/components/layout/Header';
+import MissionHub from '@/components/round3/MissionHub';
+import { getActiveRound3Missions } from '@/lib/round3/missions';
+import { getOrCreateRound3TeamState, getTeamRound3Attempts } from '@/lib/round3/state';
+import { Round3Mission, Round3MissionAttempt, Round3TeamState, TeamSession } from '@/types';
 
-import { motion } from 'framer-motion';
+export default function Round3HubPage() {
+  const router = useRouter();
+  const [session, setSession] = useState<TeamSession | null>(null);
+  const [round3Active, setRound3Active] = useState(false);
+  const [missions, setMissions] = useState<Round3Mission[]>([]);
+  const [attempts, setAttempts] = useState<Round3MissionAttempt[]>([]);
+  const [teamState, setTeamState] = useState<Round3TeamState | null>(null);
+  const [loading, setLoading] = useState(true);
 
-export default function Round3Page() {
-  return (
-    <main className="min-h-screen bg-light-grid flex flex-col items-center justify-center p-6 text-center">
-      <div className="max-w-md w-full flex flex-col items-center">
-        {/* Animated Brain Emoji */}
-        <motion.div
-          className="text-7xl mb-6"
-          animate={{ scale: [1, 1.1, 1], rotate: [0, 5, -5, 0] }}
-          transition={{ repeat: Infinity, duration: 2.5, ease: 'easeInOut' }}
-        >
-          🧠
-        </motion.div>
+  const supabaseRef = useRef<ReturnType<typeof createClient> | null>(null);
+  const getSupabase = useCallback(() => {
+    if (!supabaseRef.current) supabaseRef.current = createClient();
+    return supabaseRef.current;
+  }, []);
 
-        {/* Gradient Title */}
-        <h1
-          className="text-5xl font-black mb-3 tracking-tight bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-800 bg-clip-text text-transparent"
-          style={{ fontFamily: "'Space Grotesk', sans-serif" }}
-        >
-          ROUND 3
-        </h1>
+  useEffect(() => {
+    const s = getTeamSession();
+    if (!s) {
+      router.replace('/');
+      return;
+    }
+    setSession(s);
+  }, [router]);
 
-        <p className="text-lg font-semibold text-slate-600 mb-2">
-          Something interesting is loading...
-        </p>
+  const loadData = useCallback(async (teamId: string) => {
+    const supabase = getSupabase();
 
-        {/* Funny CS Student Line */}
-        <p className="text-sm text-slate-400 italic mb-6">
-          "Our developers are currently arguing about the rules."
-        </p>
+    // Check competition settings
+    const { data: settings } = await supabase
+      .from('competition_settings')
+      .select('round3_active')
+      .limit(1)
+      .maybeSingle();
 
-        {/* Animated Bouncing Dots */}
-        <div className="flex items-center justify-center gap-2 mb-8">
-          {[0, 1, 2].map((i) => (
-            <motion.div
-              key={i}
-              className="w-3 h-3 rounded-full bg-indigo-500"
-              animate={{ y: [0, -8, 0], opacity: [0.5, 1, 0.5] }}
-              transition={{ repeat: Infinity, duration: 0.8, delay: i * 0.2 }}
-            />
-          ))}
-        </div>
+    if (!settings?.round3_active) {
+      setRound3Active(false);
+      setLoading(false);
+      return;
+    }
+    setRound3Active(true);
 
-        {/* Locked Status Chip */}
-        <div className="px-6 py-2.5 rounded-full bg-indigo-50 border-1.5 border-indigo-200 text-indigo-700 font-extrabold text-xs shadow-xs">
-          Locked until Round 2 ends 🔒
+    // Get active missions
+    const activeMissions = await getActiveRound3Missions();
+    setMissions(activeMissions);
+
+    // Get/create team state
+    const tState = await getOrCreateRound3TeamState(teamId);
+    setTeamState(tState);
+
+    // Get team attempts
+    const tAttempts = await getTeamRound3Attempts(teamId);
+    setAttempts(tAttempts);
+
+    setLoading(false);
+  }, [getSupabase]);
+
+  useEffect(() => {
+    if (!session) return;
+    loadData(session.teamId);
+
+    // Supabase Realtime subscriptions
+    const supabase = getSupabase();
+
+    const attemptsChannel = supabase
+      .channel(`round3-team-attempts-${session.teamId}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'round3_mission_attempts',
+        filter: `team_id=eq.${session.teamId}`,
+      }, () => {
+        loadData(session.teamId);
+      })
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'round3_team_state',
+        filter: `team_id=eq.${session.teamId}`,
+      }, () => {
+        loadData(session.teamId);
+      })
+      .subscribe();
+
+    const settingsChannel = supabase
+      .channel('competition-settings-r3')
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'competition_settings',
+      }, (payload) => {
+        if (payload.new && typeof payload.new.round3_active === 'boolean') {
+          setRound3Active(payload.new.round3_active);
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(attemptsChannel);
+      supabase.removeChannel(settingsChannel);
+    };
+  }, [session, loadData, getSupabase]);
+
+  if (!session) return null;
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-surface flex items-center justify-center font-headline-sm text-headline-sm text-ink-primary font-bold">
+        <div className="flex items-center gap-space-sm bg-surface-card p-space-lg rounded-xl border-2 border-ink-primary shadow-[4px_4px_0px_#0F172A]">
+          <span className="material-symbols-outlined text-[24px] text-round-3-purple animate-spin">refresh</span>
+          <span>CONNECTING TO OPERATION TECH HEIST...</span>
         </div>
       </div>
-    </main>
+    );
+  }
+
+  if (!round3Active) {
+    return (
+      <div className="min-h-screen bg-surface font-body-md text-on-surface antialiased">
+        <Header activePath="/round3" />
+        <main className="w-full pt-28 bg-surface min-h-[calc(100vh-80px)] max-w-[1440px] mx-auto px-margin-mobile lg:px-margin">
+          <div className="max-w-xl mx-auto p-space-lg bg-surface-card rounded-xl border-2 border-ink-primary shadow-[4px_4px_0px_#0F172A] text-center flex flex-col items-center gap-space-md my-space-xl">
+            <span className="text-[48px]">🔒</span>
+            <h1 className="font-headline-lg text-headline-lg font-black text-ink-primary uppercase">
+              ROUND 3 IS LOCKED
+            </h1>
+            <p className="font-body-md text-body-md text-ink-secondary">
+              The auction master hasn&apos;t opened Round 3 yet. Stand by for signal from the admin control room.
+            </p>
+            <div className="px-space-md py-space-xs bg-round-3-purple/15 text-round-3-purple rounded-full font-label-sticker text-label-sticker font-bold border border-round-3-purple/30">
+              STATUS: STANDBY MODE
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  return (
+    <AntiCheatGuard teamId={session.teamId}>
+      <div className="min-h-screen bg-surface font-body-md text-on-surface antialiased">
+        <Header activePath="/round3" />
+        <main className="w-full pt-24 bg-surface min-h-[calc(100vh-80px)] max-w-[1440px] mx-auto px-margin-mobile lg:px-margin">
+          <MissionHub
+            teamName={session.teamName}
+            missions={missions}
+            attempts={attempts}
+            teamState={teamState}
+          />
+        </main>
+      </div>
+    </AntiCheatGuard>
   );
 }

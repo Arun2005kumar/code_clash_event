@@ -68,12 +68,107 @@ ALTER TABLE round2_questions ADD COLUMN IF NOT EXISTS explanation TEXT;
 -- ROUND 2 QUESTIONS (6 Auction Questions - Logic & Tricky Code)
 -- ============================================================
 INSERT INTO round2_questions (question_number, question_text, option_a, option_b, option_c, option_d, correct_option, explanation) VALUES
-(1, 'Q1 — Binary Decoder 🔢\n\nDecode the symbols:\n👆 = 1\n👇 = 0\n\nSequence: 👆 👇 👆 👇 👆 👇 👇 👆 (1010 1001)\n\nWhat is the decimal value?', '166', '169', '170', '174', 'B', '1010 1001 = 128 + 32 + 8 + 1 = 169.'),
-(2, 'Q2 — Data Type + Numerical Calculation 📦\n\n🔵 = Integer, 🟡 = Decimal, 🟢 = Character, 🔴 = Boolean\n\nExpression:\n🔵 12 ÷ 🔵 5 + 🔵 3\n\nIf all 🔵 values are integers, what is the final result?', '🟡 5.4', '🔵 5', '🔵 6', '🟡 6.4', 'B', 'Integer division 12 / 5 = 2. Then 2 + 3 = 5 (Integer 🔵 5).'),
-(3, 'Q3 — State Mutation Trap 💀\n\nx = 3, y = 7, z = 2\n\nfor i = 1 to 3:\n    if x < y:\n        x = x + z\n        z = z + 1\n    else:\n        y = y - z\n        z = z - 1\n\n    if y - x == z:\n        x = x + 2\n\nprint(x, y, z)', '12, 7, 5', '10, 7, 5', '12, 6, 5', '10, 6, 4', 'A', 'Tracing state mutations after 3 iterations results in x=12, y=7, z=5.'),
-(4, 'Q4 — Short-Circuit + Side Effect 🔥\n\nAssume AND uses short-circuit evaluation.\n\nx = 2, y = 5\n\nfor i = 1 to 4:\n    if x > 5 AND (y = y + 2) > 6:\n        x = x + 1\n    else:\n        x = x + y\n\nprint(x, y)', '26, 13', '22, 5', '26, 5', '30, 13', 'C', 'x > 5 evaluates to False initially, short-circuiting y=y+2 so y remains 5. x accumulates to 26.'),
-(5, 'Q5 — Nested Conditionals Trap\n\nx = 2, y = 3, z = 1\n\nfor i = 1 to 4:\n    if x + y > 5:\n        x = x - z\n        if x < y:\n            y = y + z\n        else:\n            z = z + 1\n    else:\n        y = y - x\n        z = z + y\n    if x == y:\n        z = z * 2\n\nprint(x, y, z)', '1, 5, 2', '3, 4, 2', '3, 5, 2', '2, 5, 4', 'D', 'Tracing nested conditions over 4 iterations yields x=2, y=5, z=4.'),
-(6, 'Q6 — Emoji Logic Puzzle 🧩\n\n☕ + 🧠 -> 💡\n💡 + 💻 -> 👨‍💻\n👨‍💻 + 🐛 -> 😵\n😵 + 🔍 -> 🧠\n🧠 + ⌨️ -> ✅\n\nWhat is this entire cycle most likely representing?', 'A student''s coding workflow', 'A coffee shop ordering system', 'A computer boot process', 'A social-media posting cycle', 'A', 'Coffee + Brain -> Idea -> Coding -> Bug -> Debugging -> Fixed code (Student''s Coding Workflow).')
+(1, 'Q1 — State Mutation Trap 💀
+
+x = 3
+y = 7
+z = 2
+
+for i = 1 to 3:
+
+    if x < y:
+        x = x + z
+        z = z + 1
+    else:
+        y = y - z
+        z = z - 1
+
+    if y - x == z:
+        x = x + 2
+
+print(x, y, z)', '12, 7, 5', '10, 7, 5', '12, 6, 5', '10, 6, 4', 'A', 'Tracing state mutations step-by-step results in x = 12, y = 7, z = 5.'),
+(2, 'Q2 — Nested Branch Trace
+
+x = 2
+y = 3
+z = 1
+
+for i = 1 to 4:
+
+    if x + y > 5:
+
+        x = x - z
+
+        if x < y:
+            y = y + z
+        else:
+            z = z + 1
+
+    else:
+
+        y = y - x
+        z = z + y
+
+    if x == y:
+        z = z * 2
+
+print(x, y, z)', '1, 5, 2', '3, 4, 2', '3, 5, 2', '2, 5, 4', 'D', 'Tracing nested conditions over 4 iterations yields x = 2, y = 5, z = 4.'),
+(3, 'Q3 — Binary Decoder 🔢
+
+Decode the symbols:
+
+- 👆 = 1
+- 👇 = 0
+
+Sequence:
+
+👆 👇 👆 👇 👆 👇 👇 👆
+
+What is the decimal value?', '166', '169', '170', '174', 'B', '1010 1001 = 128 + 32 + 8 + 1 = 169.'),
+(4, 'Q4 — Data Type + Numerical Calculation 📦
+
+Legend:
+
+- 🔵 = Integer
+- 🟡 = Decimal
+- 🟢 = Character
+- 🔴 = Boolean
+
+Expression:
+
+🔵 12
+÷
+🔵 5
++
+🔵 3
+
+If all 🔵 values are integers, what is the final result?', '🟡 5.4', '🔵 5', '🔵 6', '🟡 6.4', 'B', 'Integer division 12 / 5 = 2. Then 2 + 3 = 5 (Integer 🔵 5).'),
+(5, 'Q5 — Short-Circuit + Side Effect 🔥
+
+Assume AND uses short-circuit evaluation.
+
+x = 2
+y = 5
+
+for i = 1 to 4:
+
+    if x > 5 AND (y = y + 2) > 6:
+        x = x + 1
+    else:
+        x = x + y
+
+print(x, y)', '26, 13', '22, 5', '26, 5', '30, 13', 'C', 'x > 5 evaluates to False initially, short-circuiting (y = y + 2) so y remains 5. x accumulates to 26.'),
+(6, 'Q6 — Emoji Logic Puzzle 🧠
+
+Decode the emoji sequence and find out what the entire cycle represents.
+
+☕  + 🧠   → 💡
+💡  + 💻   → 🧑💻
+🧑💻 + 🐛   → 😵
+😵  + 🔍   → 🧠
+🧠  + ⌨️   → ✅
+
+What is this entire cycle most likely representing?', 'A student''s coding workflow', 'A coffee shop ordering system', 'A computer boot process', 'A social-media posting cycle', 'A', 'Coffee + Brain -> Idea -> Coding -> Bug -> Debugging -> Fixed code (Student''s Coding Workflow).')
 ON CONFLICT (question_number) DO UPDATE SET
   question_text = EXCLUDED.question_text,
   option_a = EXCLUDED.option_a,

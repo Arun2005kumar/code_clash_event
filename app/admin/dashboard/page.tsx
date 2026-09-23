@@ -102,6 +102,15 @@ export default function AdminDashboardPage() {
     setSettingsLoading(false);
   };
 
+  const initRound3 = async () => {
+    setSettingsLoading(true);
+    const supabase = createClient();
+    const { error } = await supabase.rpc('init_round3_team_states');
+    if (error) toast.error('Failed to initialize Round 3: ' + error.message);
+    else { toast.success('🎉 Round 3 states initialized for all teams!'); loadData(); }
+    setSettingsLoading(false);
+  };
+
   const STAT_CARDS = stats ? [
     { label: 'Registered Teams', value: stats.totalTeams, icon: '👥', color: 'text-round-1-blue', bg: 'bg-round-1-blue/10' },
     { label: 'Logged In Teams', value: stats.loggedInTeams, icon: '✅', color: 'text-status-correct', bg: 'bg-status-correct/10' },
@@ -208,6 +217,26 @@ export default function AdminDashboardPage() {
               </button>
             </div>
 
+            {/* Round 3 Toggle */}
+            <div className="flex items-center justify-between p-space-md bg-surface-muted rounded-xl border-2 border-ink-primary shadow-sm">
+              <div className="flex flex-col">
+                <span className="font-headline-sm text-headline-sm font-extrabold text-ink-primary">Round 3</span>
+                <span className="font-body-sm text-body-sm text-ink-secondary">Operation Tech Heist</span>
+                <span className={`font-label-sticker text-[10px] font-bold uppercase mt-1 ${settings.round3_active ? 'text-round-3-purple' : 'text-status-wrong'}`}>
+                  ● {settings.round3_active ? 'STATE: ACTIVE' : 'STATE: DISABLED'}
+                </span>
+              </div>
+              <button
+                onClick={() => updateSetting('round3_active', !settings.round3_active)}
+                disabled={settingsLoading}
+                className={`relative w-14 h-8 rounded-full transition-colors cursor-pointer border-2 border-ink-primary shadow-inner ${
+                  settings.round3_active ? 'bg-round-3-purple' : 'bg-surface-card'
+                }`}
+              >
+                <span className={`absolute top-1 left-1 w-5 h-5 rounded-full bg-ink-primary transition-transform ${settings.round3_active ? 'translate-x-6 bg-white' : 'translate-x-0'}`} />
+              </button>
+            </div>
+
             {/* Show R1 Explanations Toggle */}
             <div className="flex items-center justify-between p-space-md bg-surface-muted rounded-xl border-2 border-ink-primary shadow-sm">
               <div className="flex flex-col">
@@ -229,21 +258,31 @@ export default function AdminDashboardPage() {
             </div>
           </div>
 
-          {/* Initialize Round 2 Action */}
+          {/* Initialize Actions */}
           <div className="pt-space-md border-t-2 border-surface-muted flex flex-col sm:flex-row sm:items-center justify-between gap-space-md">
             <div>
-              <span className="font-label-sticker text-label-sticker text-currency-gold uppercase font-black block">INITIALIZE TEAM PURSES</span>
-              <h3 className="font-headline-sm text-headline-sm font-bold text-ink-primary">Initialize Round 2 States</h3>
-              <p className="font-body-sm text-body-sm text-ink-secondary">Provision 100 starting coins and initial status for all registered teams before starting Round 2.</p>
+              <span className="font-label-sticker text-label-sticker text-currency-gold uppercase font-black block">INITIALIZE COMPETITION STAGES</span>
+              <h3 className="font-headline-sm text-headline-sm font-bold text-ink-primary">Initialize Round 2 &amp; Round 3 States</h3>
+              <p className="font-body-sm text-body-sm text-ink-secondary">Provision initial status and data for all registered teams before starting rounds.</p>
             </div>
-            <button
-              onClick={initRound2}
-              disabled={settingsLoading}
-              className="px-space-lg py-space-md bg-currency-gold hover:bg-currency-gold/90 text-ink-primary font-headline-sm text-headline-sm font-black rounded-xl border-2 border-ink-primary shadow-[3px_3px_0px_#0F172A] disabled:opacity-60 transition-all cursor-pointer whitespace-nowrap shrink-0 flex items-center gap-space-xs"
-            >
-              <span className="material-symbols-outlined text-[20px]">toll</span>
-              <span>INITIALIZE 100 COIN STASH</span>
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={initRound2}
+                disabled={settingsLoading}
+                className="px-space-md py-space-sm bg-currency-gold hover:bg-currency-gold/90 text-ink-primary font-headline-sm text-body-md font-black rounded-xl border-2 border-ink-primary shadow-[2px_2px_0px_#0F172A] disabled:opacity-60 transition-all cursor-pointer whitespace-nowrap flex items-center gap-space-xs"
+              >
+                <span className="material-symbols-outlined text-[18px]">toll</span>
+                <span>INIT R2 PURSES</span>
+              </button>
+              <button
+                onClick={initRound3}
+                disabled={settingsLoading}
+                className="px-space-md py-space-sm bg-round-3-purple hover:bg-tertiary-container text-on-tertiary font-headline-sm text-body-md font-black rounded-xl border-2 border-ink-primary shadow-[2px_2px_0px_#0F172A] disabled:opacity-60 transition-all cursor-pointer whitespace-nowrap flex items-center gap-space-xs"
+              >
+                <span className="material-symbols-outlined text-[18px]">terminal</span>
+                <span>INIT R3 HEIST</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

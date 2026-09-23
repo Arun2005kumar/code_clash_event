@@ -10,8 +10,10 @@ import { toast } from 'sonner';
 
 const NAV = [
   { href: '/admin/dashboard', icon: 'tune', label: 'Stage Controls' },
-  { href: '/admin/round1', icon: 'timer', label: 'Round Manager' },
-  { href: '/admin/round2/auction', icon: 'gavel', label: 'Auction Engine', hasLive: true },
+  { href: '/admin/round1', icon: 'timer', label: 'Round 1 Manager' },
+  { href: '/admin/round2/auction', icon: 'gavel', label: 'Round 2 Auction', hasLive: true },
+  { href: '/admin/round3', icon: 'terminal', label: 'Round 3 Heist' },
+  { href: '/admin/round3/results', icon: 'military_tech', label: 'Round 3 Results' },
   { href: '/admin/teams', icon: 'group', label: 'Teams & Scores' },
 ];
 
