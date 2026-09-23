@@ -30,11 +30,11 @@ export default function Round1ResultPage() {
         .select('*')
         .eq('team_id', session.teamId)
         .in('status', ['submitted', 'auto_submitted'])
-        .single();
+        .maybeSingle();
 
       if (error || !data) {
-        toast.error('No submitted result found.');
-        router.replace('/round1');
+        setAttempt(null);
+        setLoading(false);
         return;
       }
 
@@ -53,7 +53,37 @@ export default function Round1ResultPage() {
     );
   }
 
-  if (!attempt) return null;
+  if (!attempt) {
+    return (
+      <main className="min-h-screen bg-dot-grid flex items-center justify-center p-6">
+        <div className="max-w-md w-full bg-surface-card border-2 border-ink-primary rounded-2xl p-8 shadow-[6px_6px_0px_#0F172A] text-center">
+          <div className="w-16 h-16 bg-amber-100 text-amber-600 border-2 border-ink-primary rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4 font-black shadow-[2px_2px_0px_#0F172A]">
+            ⚠️
+          </div>
+          <h1 className="text-2xl font-black text-ink-primary mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+            No Submitted Result
+          </h1>
+          <p className="text-ink-secondary text-sm mb-6">
+            We couldn't find a completed submission for Round 1 for your team. You can jump into Round 1 if it's currently live or return to the main arena.
+          </p>
+          <div className="flex flex-col gap-3">
+            <button
+              onClick={() => router.push('/round1')}
+              className="w-full py-3.5 bg-primary text-on-primary font-bold text-sm rounded-xl border-2 border-ink-primary shadow-[3px_3px_0px_#0F172A] hover:translate-x-[1px] hover:translate-y-[1px] transition-transform"
+            >
+              Go to Round 1 Terminal →
+            </button>
+            <button
+              onClick={() => router.push('/')}
+              className="w-full py-3.5 bg-surface-muted text-ink-primary font-bold text-sm rounded-xl border-2 border-ink-primary shadow-[2px_2px_0px_#0F172A] hover:bg-slate-200 transition-colors"
+            >
+              Return to Arena Home
+            </button>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   const percentage = Math.round((attempt.correct_answers / attempt.total_questions) * 100);
   const grade = percentage >= 90 ? '🏆' : percentage >= 70 ? '⭐' : percentage >= 50 ? '👍' : '😅';

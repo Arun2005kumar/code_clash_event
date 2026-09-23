@@ -8,6 +8,7 @@ import { useState, useEffect, useRef } from 'react';
 import { getTeamSession, clearTeamSession } from '@/lib/auth/session';
 import { TeamSession } from '@/types';
 import { toast } from 'sonner';
+import { createClient } from '@/lib/supabase/client';
 
 interface HeaderProps {
   activePath?: string;
@@ -18,6 +19,8 @@ export default function Header({ activePath }: HeaderProps) {
   const router = useRouter();
   const [session, setSession] = useState<TeamSession | null>(null);
   const [popoverOpen, setPopoverOpen] = useState(false);
+  const [activeRound, setActiveRound] = useState<'round1' | 'round2' | 'round3'>('round1');
+  const [activeRoundLabel, setActiveRoundLabel] = useState<string>('LIVE ARENA');
   const popoverRef = useRef<HTMLDivElement>(null);
 
   const refreshSession = () => {
@@ -36,6 +39,38 @@ export default function Header({ activePath }: HeaderProps) {
       window.removeEventListener('team-session-change', handleSessionEvent);
       window.removeEventListener('storage', handleSessionEvent);
     };
+  }, []);
+
+  useEffect(() => {
+    const fetchActiveRound = async () => {
+      try {
+        const supabase = createClient();
+        const { data } = await supabase
+          .from('competition_settings')
+          .select('round1_active, round2_active, round3_active')
+          .limit(1)
+          .maybeSingle();
+
+        if (data) {
+          if ((data as any).round3_active) {
+            setActiveRound('round3');
+            setActiveRoundLabel('ROUND 3 LIVE');
+          } else if (data.round2_active) {
+            setActiveRound('round2');
+            setActiveRoundLabel('ROUND 2 LIVE');
+          } else if (data.round1_active) {
+            setActiveRound('round1');
+            setActiveRoundLabel('ROUND 1 LIVE');
+          } else {
+            setActiveRound('round1');
+            setActiveRoundLabel('ARENA READY');
+          }
+        }
+      } catch (e) {
+        // Fallback
+      }
+    };
+    fetchActiveRound();
   }, []);
 
   // Click outside listener for popover
@@ -82,7 +117,7 @@ export default function Header({ activePath }: HeaderProps) {
           <div className="hidden md:flex items-center gap-space-xs px-space-sm py-1 bg-round-2-amber/20 border-2 border-ink-primary rounded-full shadow-[2px_2px_0px_#0F172A]">
             <span className="w-2 h-2 rounded-full bg-round-2-orange animate-ping"></span>
             <span className="font-label-ticker text-label-ticker text-on-secondary-container uppercase font-extrabold">
-              ROUND 2 LIVE
+              {activeRoundLabel}
             </span>
           </div>
         </div>
@@ -108,7 +143,7 @@ export default function Header({ activePath }: HeaderProps) {
           </Link>
 
           <Link
-            href="/round1"
+            href={`/${activeRound}`}
             className={`px-space-md py-space-xs font-label-ticker text-label-ticker uppercase transition-all ${
               pathname.startsWith('/round')
                 ? 'bg-primary text-on-primary shadow-[2px_2px_0px_#0F172A] rounded-lg font-bold'

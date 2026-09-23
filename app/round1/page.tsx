@@ -70,6 +70,7 @@ export default function Round1Page() {
 
       const attempt = attemptData[0];
       if (attempt.already_submitted) {
+        setLoading(false);
         router.replace('/round1/result');
         return;
       }
