@@ -64,7 +64,22 @@ export default function AdminDashboardPage() {
     setLoading(false);
   };
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => {
+    loadData();
+
+    const supabase = createClient();
+    const channel = supabase
+      .channel('public:admin:dashboard')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'teams' }, () => loadData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'round1_attempts' }, () => loadData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'round2_team_state' }, () => loadData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'competition_settings' }, () => loadData())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   const updateSetting = async (key: string, value: boolean | number) => {
     setSettingsLoading(true);

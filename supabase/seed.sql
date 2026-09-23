@@ -210,3 +210,53 @@ CREATE POLICY "competition_settings_insert_all" ON competition_settings FOR INSE
 DELETE FROM competition_settings;
 INSERT INTO competition_settings (round1_active, round2_active, round3_active, current_round2_question, show_round1_explanations, round3_initialized, round3_results_published)
 VALUES (TRUE, FALSE, FALSE, 1, FALSE, FALSE, FALSE);
+
+-- Ensure public access policies for client-side PostgREST queries across all rounds
+DROP POLICY IF EXISTS "round1_attempts_select_own" ON round1_attempts;
+DROP POLICY IF EXISTS "round1_attempts_select_all" ON round1_attempts;
+CREATE POLICY "round1_attempts_select_all" ON round1_attempts FOR SELECT USING (TRUE);
+
+DROP POLICY IF EXISTS "round1_attempts_insert_own" ON round1_attempts;
+DROP POLICY IF EXISTS "round1_attempts_insert_all" ON round1_attempts;
+CREATE POLICY "round1_attempts_insert_all" ON round1_attempts FOR INSERT WITH CHECK (TRUE);
+
+DROP POLICY IF EXISTS "round1_attempts_update_own" ON round1_attempts;
+DROP POLICY IF EXISTS "round1_attempts_update_all" ON round1_attempts;
+CREATE POLICY "round1_attempts_update_all" ON round1_attempts FOR UPDATE USING (TRUE);
+
+DROP POLICY IF EXISTS "round1_answers_select_own" ON round1_answers;
+DROP POLICY IF EXISTS "round1_answers_select_all" ON round1_answers;
+CREATE POLICY "round1_answers_select_all" ON round1_answers FOR SELECT USING (TRUE);
+
+DROP POLICY IF EXISTS "round1_answers_insert_own" ON round1_answers;
+DROP POLICY IF EXISTS "round1_answers_insert_all" ON round1_answers;
+CREATE POLICY "round1_answers_insert_all" ON round1_answers FOR INSERT WITH CHECK (TRUE);
+
+DROP POLICY IF EXISTS "round1_answers_update_own" ON round1_answers;
+DROP POLICY IF EXISTS "round1_answers_update_all" ON round1_answers;
+CREATE POLICY "round1_answers_update_all" ON round1_answers FOR UPDATE USING (TRUE);
+
+DROP POLICY IF EXISTS "round2_team_state_select_own" ON round2_team_state;
+DROP POLICY IF EXISTS "round2_team_state_select_all" ON round2_team_state;
+CREATE POLICY "round2_team_state_select_all" ON round2_team_state FOR SELECT USING (TRUE);
+
+DROP POLICY IF EXISTS "round2_team_state_insert_public" ON round2_team_state;
+DROP POLICY IF EXISTS "round2_team_state_insert_all" ON round2_team_state;
+CREATE POLICY "round2_team_state_insert_all" ON round2_team_state FOR INSERT WITH CHECK (TRUE);
+
+DROP POLICY IF EXISTS "round2_team_state_update_admin" ON round2_team_state;
+DROP POLICY IF EXISTS "round2_team_state_update_all" ON round2_team_state;
+CREATE POLICY "round2_team_state_update_all" ON round2_team_state FOR UPDATE USING (TRUE);
+
+DROP POLICY IF EXISTS "round2_bids_select_own" ON round2_bids;
+DROP POLICY IF EXISTS "round2_bids_select_all" ON round2_bids;
+CREATE POLICY "round2_bids_select_all" ON round2_bids FOR SELECT USING (TRUE);
+
+DROP POLICY IF EXISTS "round2_bids_insert_own" ON round2_bids;
+DROP POLICY IF EXISTS "round2_bids_insert_all" ON round2_bids;
+CREATE POLICY "round2_bids_insert_all" ON round2_bids FOR INSERT WITH CHECK (TRUE);
+
+DROP POLICY IF EXISTS "round2_results_select_own" ON round2_results;
+DROP POLICY IF EXISTS "round2_results_select_all" ON round2_results;
+CREATE POLICY "round2_results_select_all" ON round2_results FOR SELECT USING (TRUE);
+
