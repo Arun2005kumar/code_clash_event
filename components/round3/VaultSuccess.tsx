@@ -21,13 +21,12 @@ export default function VaultSuccess({ teamName, finishTimeSeconds }: VaultSucce
 
         {/* TOP ACCESS BADGE */}
         <div className="flex items-center justify-between pb-space-sm border-b-2 border-surface-muted">
-          <div className="inline-flex items-center gap-space-xs px-space-md py-space-xs bg-status-correct text-on-primary rounded-full font-label-ticker text-label-ticker shadow-sm border border-ink-primary font-bold animate-bounce">
+          <div className="inline-flex items-center gap-space-xs px-space-md py-space-xs bg-status-correct text-on-primary rounded-full font-label-ticker text-label-ticker shadow-sm border border-ink-primary font-black animate-bounce">
             <span className="material-symbols-outlined text-[18px]">lock_open</span>
-            <span>&gt;&gt; ACCESS GRANTED &lt;&lt;</span>
-            <span>🎉</span>
+            <span>🔓 VAULT BREACHED</span>
           </div>
-          <span className="px-space-sm py-space-xs bg-currency-gold/20 text-on-secondary-fixed rounded-md font-label-sticker text-label-sticker font-bold border border-currency-gold/40">
-            CONFIRMED BY ROOT
+          <span className="px-space-sm py-space-xs bg-status-correct/15 text-status-correct rounded-md font-label-sticker text-label-sticker font-extrabold border border-status-correct/30">
+            5/5 CLUES VERIFIED
           </span>
         </div>
 
@@ -36,8 +35,8 @@ export default function VaultSuccess({ teamName, finishTimeSeconds }: VaultSucce
           <div className="font-label-sticker text-label-sticker text-round-3-purple tracking-widest uppercase font-bold">
             STAGE 03 CLEAR // HEIST ACCOMPLISHED
           </div>
-          <h2 className="font-headline-lg text-headline-lg text-ink-primary mt-1 tracking-tight leading-none font-black">
-            OPERATION TECH HEIST: COMPLETE!
+          <h2 className="font-headline-lg text-headline-lg text-ink-primary mt-1 tracking-tight leading-none font-black uppercase">
+            OPERATION: TECH HEIST COMPLETE
           </h2>
 
           <div className="mt-space-sm p-space-sm bg-surface-container rounded-lg flex items-center gap-space-sm border border-ink-primary">
@@ -45,11 +44,11 @@ export default function VaultSuccess({ teamName, finishTimeSeconds }: VaultSucce
               ✓
             </span>
             <div>
-              <span className="font-headline-sm text-body-md text-ink-primary font-bold block">
-                TEAM {teamName.toUpperCase()} HAS CRACKED THE VAULT!
+              <span className="font-headline-sm text-body-md text-ink-primary font-bold block uppercase">
+                TEAM {teamName.toUpperCase()} HAS BREACHED THE MAIN VAULT!
               </span>
               <span className="font-body-sm text-body-sm text-status-correct font-bold">
-                Campus Terminal Core #01 Successfully Pwned
+                Campus Mainframe Core Successfully Decrypted
               </span>
             </div>
           </div>

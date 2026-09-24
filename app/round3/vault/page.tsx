@@ -21,6 +21,7 @@ export default function VaultPage() {
   const [teamState, setTeamState] = useState<Round3TeamState | null>(null);
   const [loading, setLoading] = useState(true);
   const [unlocked, setUnlocked] = useState(false);
+  const [isExpired, setIsExpired] = useState(false);
 
   useEffect(() => {
     const s = getTeamSession();
@@ -81,7 +82,7 @@ export default function VaultPage() {
             </Link>
 
             <div className="flex items-center gap-space-sm">
-              <Round3Timer teamId={session.teamId} />
+              <Round3Timer teamId={session.teamId} onExpire={() => setIsExpired(true)} />
               <span className="font-label-sticker text-label-sticker text-round-3-purple bg-surface-card px-space-md py-space-xs rounded-full border-2 border-ink-primary font-bold">
                 ⚡ MAINFRAME VAULT CORE
               </span>
@@ -97,6 +98,7 @@ export default function VaultPage() {
             <VaultEntry
               teamId={session.teamId}
               attempts={attempts}
+              isExpired={isExpired}
               onSuccess={() => {
                 setUnlocked(true);
                 loadData(session.teamId);
