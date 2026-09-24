@@ -15,6 +15,7 @@ import {
 import AntiCheatGuard from '@/components/anti-cheat/AntiCheatGuard';
 import ConfettiBurst from '@/components/animations/ConfettiBurst';
 import { Round1Question, Option } from '@/types';
+import FormattedQuestion from '@/components/quiz/FormattedQuestion';
 
 const OPTIONS: Option[] = ['A', 'B', 'C', 'D'];
 
@@ -259,7 +260,7 @@ export default function Round1Page() {
   const coveragePercent = Math.round((answeredSet.size / questions.length) * 100);
 
   return (
-    <AntiCheatGuard teamId={session.teamId}>
+    <AntiCheatGuard teamId={session.teamId} teamName={session.teamName} roundName="Round 1">
       <ConfettiBurst trigger={confetti} />
       <div className="bg-canvas-cream font-body-md text-body-md text-ink-primary min-h-screen flex flex-col selection:bg-round-2-orange selection:text-ink-primary">
         <Header />
@@ -345,10 +346,8 @@ export default function Round1Page() {
 
                     {/* Prompt */}
                     <div className="flex flex-col gap-space-xs">
-                      <h1 className="font-headline-lg text-headline-lg font-black text-ink-primary leading-tight">
-                        {currentQuestion.question_text}
-                      </h1>
-                      <p className="font-body-md text-body-md text-ink-secondary">
+                      <FormattedQuestion text={currentQuestion.question_text} />
+                      <p className="font-body-md text-body-md text-ink-secondary mt-1">
                         Select the singular correct answer for this challenge.
                       </p>
                     </div>

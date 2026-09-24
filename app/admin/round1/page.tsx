@@ -198,7 +198,7 @@ export default function AdminRound1Page() {
                     ANSWER: {q.correct_option}
                   </span>
                 </div>
-                <p className="font-headline-sm text-body-md text-ink-primary font-bold truncate">{q.question_text}</p>
+                <p className="font-headline-sm text-body-md text-ink-primary font-bold truncate">{q.question_text.replace(/\\n/g, ' ')}</p>
                 <p className="font-body-sm text-body-sm text-ink-secondary mt-0.5 truncate">
                   A: {q.option_a} | B: {q.option_b} | C: {q.option_c} | D: {q.option_d}
                 </p>

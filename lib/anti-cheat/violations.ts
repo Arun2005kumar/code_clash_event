@@ -1,36 +1,53 @@
-// lib/anti-cheat/violations.ts
-// Violation logging helpers for anti-cheat system
+import { createClient } from '@/lib/supabase/client'
 
-import { createClient } from '@/lib/supabase/client';
-import { ViolationType } from '@/types';
+interface LogViolationParams {
+  teamId: string
+  violationType: string
+  roundName: string
+}
 
-export async function logViolation(
-  teamId: string,
-  violationType: ViolationType,
-  details?: string
-): Promise<void> {
+const supabase = createClient()
+
+// Debounce map to prevent flooding same violation type
+const lastViolationTime: Record<string, number> = {}
+const DEBOUNCE_MS = 3000
+
+export async function logViolation({
+  teamId,
+  violationType,
+  roundName,
+}: LogViolationParams) {
+  const key = `${teamId}-${violationType}`
+  const now = Date.now()
+
+  // Debounce: skip if same violation logged within 3 seconds
+  if (lastViolationTime[key] && now - lastViolationTime[key] < DEBOUNCE_MS) {
+    return
+  }
+  lastViolationTime[key] = now
+
   try {
-    const supabase = createClient();
-    await supabase.rpc('log_violation', {
-      p_team_id: teamId,
-      p_violation_type: violationType,
-      p_details: details ?? null,
-    });
-  } catch (error) {
-    // Silently fail — don't crash the exam over logging errors
-    console.error('[AntiCheat] Failed to log violation:', error);
+    await supabase.from('anti_cheat_violations').insert({
+      team_id: teamId,
+      violation_type: violationType,
+      round_name: roundName,
+      created_at: new Date().toISOString(),
+    })
+  } catch (err) {
+    // Never let logging failure disrupt the exam
+    console.error('Violation log failed silently:', err)
   }
 }
 
+export async function getTeamViolationCount(teamId: string): Promise<number> {
+  const { count } = await supabase
+    .from('anti_cheat_violations')
+    .select('*', { count: 'exact', head: true })
+    .eq('team_id', teamId)
+
+  return count ?? 0
+}
+
 export async function getViolationCount(teamId: string): Promise<number> {
-  try {
-    const supabase = createClient();
-    const { count } = await supabase
-      .from('anti_cheat_violations')
-      .select('*', { count: 'exact', head: true })
-      .eq('team_id', teamId);
-    return count ?? 0;
-  } catch {
-    return 0;
-  }
+  return getTeamViolationCount(teamId)
 }

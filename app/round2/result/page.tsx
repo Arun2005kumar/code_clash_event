@@ -9,6 +9,7 @@ import { createClient } from '@/lib/supabase/client';
 import { getTeamSession } from '@/lib/auth/session';
 import { Round2Result, Round2TeamState } from '@/types';
 import CountUp from '@/components/animations/CountUp';
+import FormattedQuestion from '@/components/quiz/FormattedQuestion';
 
 interface AllQuestionKey {
   id: string;
@@ -154,7 +155,11 @@ export default function Round2ResultPage() {
                     CORRECT: OPTION {q.correct_option}
                   </span>
                 </div>
-                <h3 className="font-bold text-slate-900 text-base">{q.question_text}</h3>
+                <FormattedQuestion
+                  text={q.question_text}
+                  titleClassName="font-bold text-slate-900 text-base"
+                  compact
+                />
                 <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-950 font-medium">
                   <strong>Official Answer:</strong> Option {q.correct_option} — {getOptText(q, q.correct_option)}
                 </div>

@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 import { Round2QuestionAdmin, Round2QuestionStatus } from '@/types';
+import FormattedQuestion from '@/components/quiz/FormattedQuestion';
 
 const STATUS_FLOW: Round2QuestionStatus[] = ['waiting', 'live', 'bidding_open', 'bidding_closed', 'resolved'];
 
@@ -98,12 +99,36 @@ export default function AdminRound2Page() {
             {questions.length} / 6 Auction lots configured in database.
           </p>
         </div>
-        <button
-          onClick={() => setEditing({ isNew: true, status: 'waiting', question_number: questions.length + 1 })}
-          className="px-space-md py-space-sm bg-round-2-orange text-on-primary font-headline-sm text-headline-sm rounded-xl border-2 border-ink-primary shadow-[2px_2px_0px_#0F172A] hover:bg-round-2-orange/90 transition-all cursor-pointer font-black"
-        >
-          + Add Auction Lot
-        </button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={async () => {
+              setSaving(true);
+              try {
+                const res = await fetch('/api/seed-r2');
+                const json = await res.json();
+                if (json.success) {
+                  toast.success('Successfully seeded all 6 Hard Trick Questions!');
+                  load();
+                } else {
+                  toast.error(json.error || 'Failed to seed questions.');
+                }
+              } catch (e: any) {
+                toast.error(e.message);
+              } finally {
+                setSaving(false);
+              }
+            }}
+            className="px-space-md py-space-sm bg-emerald-600 text-white font-headline-sm text-headline-sm rounded-xl border-2 border-ink-primary shadow-[2px_2px_0px_#0F172A] hover:bg-emerald-700 transition-all cursor-pointer font-black flex items-center gap-1.5"
+          >
+            <span>⚡ Seed / Reset 6 Questions</span>
+          </button>
+          <button
+            onClick={() => setEditing({ isNew: true, status: 'waiting', question_number: questions.length + 1 })}
+            className="px-space-md py-space-sm bg-round-2-orange text-on-primary font-headline-sm text-headline-sm rounded-xl border-2 border-ink-primary shadow-[2px_2px_0px_#0F172A] hover:bg-round-2-orange/90 transition-all cursor-pointer font-black"
+          >
+            + Add Auction Lot
+          </button>
+        </div>
       </div>
 
       {/* Questions List */}
@@ -126,7 +151,7 @@ export default function AdminRound2Page() {
                     CORRECT: {q.correct_option}
                   </span>
                 </div>
-                <p className="font-headline-sm text-body-md text-ink-primary font-bold">{q.question_text}</p>
+                <FormattedQuestion text={q.question_text} titleClassName="font-headline-sm text-body-md text-ink-primary font-bold" compact />
               </div>
 
               <div className="flex items-center gap-space-xs shrink-0 self-end md:self-auto">

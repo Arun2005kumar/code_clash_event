@@ -85,6 +85,13 @@ export default function Round3AdminOverview() {
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'competition_settings' }, () => {
         loadData();
       })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'anti_cheat_violations' }, (payload) => {
+        loadData();
+        const v = payload.new as any;
+        toast.warning(`Violation — ${v.violation_type}`, {
+          description: `Team flagged in ${v.round_name || 'Round 3'}`,
+        });
+      })
       .subscribe();
 
     return () => {

@@ -5,6 +5,7 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { Option } from '@/types';
+import FormattedQuestion from '@/components/quiz/FormattedQuestion';
 
 interface BaseQuestion {
   id: string;
@@ -54,9 +55,10 @@ export default function QuestionCard({
           <span className="inline-flex items-center gap-1.5 bg-indigo-50 border border-indigo-200/80 text-indigo-700 text-xs font-bold px-3.5 py-1.2 rounded-full mb-3 shadow-xs">
             <span>Question {questionIndex + 1} of 30</span>
           </span>
-          <p className="text-slate-900 font-bold text-lg sm:text-xl leading-relaxed whitespace-pre-wrap font-sans">
-            {question.question_text}
-          </p>
+          <FormattedQuestion
+            text={question.question_text}
+            titleClassName="text-slate-900 font-bold text-lg sm:text-xl leading-relaxed font-sans"
+          />
         </div>
 
         {/* Options */}

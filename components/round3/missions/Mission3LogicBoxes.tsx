@@ -1,6 +1,6 @@
 'use client';
 
-// components/round3/missions/Mission3LogicBoxes.tsx
+// components/round3/missions/Mission3LogicBoxes.tsx — Mission 03: THE HACKER'S SWITCHBOARD
 import { useState } from 'react';
 import Link from 'next/link';
 import { validateMissionAnswerServer } from '@/lib/round3/missions';
@@ -16,64 +16,56 @@ interface MissionProps {
   isExpired?: boolean;
 }
 
+const SIGNAL_EQUATIONS = [
+  'A + A = 8',
+  'B + B = 14',
+  'C + C = 4',
+  'D + D = 18',
+];
+
 export default function Mission3LogicBoxes({ teamId, mission, attempt, onSuccess, isExpired = false }: MissionProps) {
-  const [selectedBox, setSelectedBox] = useState(attempt?.submitted_answer?.toUpperCase() ?? '');
+  const [codeInput, setCodeInput] = useState(attempt?.submitted_answer ?? '');
   const [loading, setLoading] = useState(false);
   const [solved, setSolved] = useState(attempt?.is_correct ?? false);
   const [cluePiece, setCluePiece] = useState(attempt?.clue_piece_revealed ?? '');
   const [errorMsg, setErrorMsg] = useState('');
 
-  const content = mission.handout_content;
-  const boxes = content.boxes ?? [
-    { label: 'A', text: 'The prize is here.' },
-    { label: 'B', text: 'The prize is not in A.' },
-    { label: 'C', text: 'The prize is not here.' },
-    { label: 'D', text: 'The prize is not in C.' }
-  ];
-
-  // Box Selection (Highlight only, no auto-submit)
-  const handleSelectBox = (label: string) => {
-    if (solved || isExpired || loading) return;
-    setSelectedBox(label);
-    setErrorMsg('');
-  };
-
-  // Confirm Answer Submission
-  const handleConfirmAnswer = async () => {
-    if (!selectedBox || solved || isExpired || loading) return;
+  const handleConfirmAnswer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!codeInput.trim() || solved || isExpired || loading) return;
     setLoading(true);
     setErrorMsg('');
 
-    const res = await validateMissionAnswerServer(teamId, 3, selectedBox);
+    const res = await validateMissionAnswerServer(teamId, 3, codeInput.trim());
     setLoading(false);
 
-    if (res.is_correct && res.clue_piece) {
+    if (res.is_correct) {
       setSolved(true);
-      setCluePiece(res.clue_piece);
-      onSuccess(res.clue_piece);
-      toast.success('Mission 3 Clear! Key #3 recovered.');
+      const piece = res.clue_piece ?? '2497';
+      setCluePiece(piece);
+      onSuccess(piece);
+      toast.success('SIGNAL DECODED! Key #3 recovered.');
     } else {
-      setErrorMsg('✕ INCORRECT');
-      toast.error('Incorrect box. Try again!');
+      setErrorMsg('SIGNAL REJECTED: The decoded sequence is incorrect. Recheck the letter-to-number mapping.');
+      toast.error('Signal rejected. Try again!');
     }
   };
 
   return (
     <div className="bg-surface-card rounded-xl p-space-lg shadow-[3px_3px_0px_#0F172A] border-2 border-ink-primary flex flex-col gap-space-md">
-      {/* Header Info */}
       <div className="flex items-center justify-between">
         <span className="px-space-sm py-space-xs bg-round-3-purple/15 text-round-3-purple rounded-md font-label-sticker text-label-sticker font-bold">
-          MODERATE • EST. SOLVE TIME • 4–6 MIN
+          MODERATE • EST. SOLVE TIME: 4–6 MIN
         </span>
         <span className="font-label-code text-label-sticker text-ink-secondary font-bold">MISSION 03</span>
       </div>
 
       <div>
         <h1 className="font-headline-lg text-headline-lg text-ink-primary font-black uppercase">
-          {mission.title}
+          THE HACKER&apos;S SWITCHBOARD
         </h1>
         <p className="font-body-md text-body-md text-ink-secondary font-medium mt-1">
-          {content.briefing}
+          📡 INTERCEPTED SIGNAL: A scrambled signal has been intercepted. The system uses letters as numeric codes. Discover the hidden mapping and decode the final transmission.
         </p>
       </div>
 
@@ -84,35 +76,55 @@ export default function Mission3LogicBoxes({ teamId, mission, attempt, onSuccess
         </div>
       )}
 
-      {/* If Solved: Show compact viewport-friendly Success State */}
+      {/* Signal Display Box */}
+      <div className="p-space-md bg-canvas-cream rounded-xl border-2 border-ink-primary shadow-sm flex flex-col gap-space-md">
+        <span className="font-label-sticker text-label-sticker text-ink-secondary uppercase font-bold tracking-wider block">
+          INTERCEPTED EQUATIONS:
+        </span>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-space-sm font-label-code text-headline-sm text-ink-primary font-black">
+          {SIGNAL_EQUATIONS.map((eq, idx) => (
+            <div key={idx} className="p-space-sm bg-surface-card rounded-lg border-2 border-ink-primary text-center shadow-xs">
+              {eq}
+            </div>
+          ))}
+        </div>
+
+        <div className="p-space-md bg-round-3-purple/10 rounded-xl border-2 border-round-3-purple flex flex-col sm:flex-row items-center justify-between gap-space-sm">
+          <span className="font-headline-sm text-headline-sm font-black text-ink-primary uppercase">
+            TARGET TRANSMISSION TO DECODE:
+          </span>
+          <span className="font-display-xl text-headline-lg text-round-3-purple font-black tracking-widest bg-surface-card px-space-md py-1 rounded-lg border-2 border-ink-primary shadow-xs">
+            C A D B
+          </span>
+        </div>
+      </div>
+
       {solved ? (
         <div className="p-space-lg bg-surface-card rounded-xl border-2 border-ink-primary shadow-[4px_4px_0px_#0F172A] flex flex-col gap-space-md animate-fadeIn">
-          {/* Success Header Badges */}
           <div className="flex flex-wrap items-center justify-between gap-space-xs">
             <div className="px-space-md py-space-xs bg-status-correct text-on-tertiary rounded-full font-headline-sm text-headline-sm font-black inline-flex items-center gap-space-xs shadow-xs animate-bounce">
-              <span className="material-symbols-outlined text-[20px]">celebration</span>
-              <span>✓ CLUE #3 FOUND!</span>
+              <span className="material-symbols-outlined text-[20px]">verified</span>
+              <span>✓ SIGNAL DECODED!</span>
             </div>
             <div className="px-space-sm py-space-xs bg-status-correct/15 text-status-correct rounded-md font-label-sticker text-label-sticker font-extrabold border border-status-correct/30">
-              3/5 KEYS RECOVERED
+              🔑 KEY #3 RECOVERED
             </div>
           </div>
 
-          {/* Key Unlocked Display */}
-          <div className="p-space-md bg-canvas-cream rounded-xl border-2 border-ink-primary flex flex-col items-center justify-center text-center gap-1 shadow-inner">
-            <div className="flex items-center gap-space-xs font-headline-sm text-headline-sm font-black text-ink-primary">
-              <span className="text-[28px]">🔑</span>
-              <span>KEY 03 UNLOCKED:</span>
-              <span className="font-display-xl text-headline-lg text-status-correct font-black">
-                “{cluePiece || 'BOX C'}”
+          <div className="p-space-md bg-canvas-cream rounded-xl border-2 border-ink-primary flex flex-col gap-space-xs shadow-inner">
+            <div className="flex items-center gap-space-sm">
+              <span className="font-headline-sm text-headline-sm font-black text-ink-primary uppercase">
+                DECODED CODE:
+              </span>
+              <span className="font-display-xl text-headline-lg text-status-correct font-black bg-surface-card px-space-md py-0.5 rounded border border-ink-primary shadow-xs">
+                2497
               </span>
             </div>
-            <p className="font-body-sm text-body-sm italic text-ink-secondary">
-              “Logic prevails. Mainframe security node bypassed.”
-            </p>
+            <div className="flex items-center gap-space-xs text-status-correct font-headline-sm text-label-ticker font-bold mt-2 pt-2 border-t border-ink-primary/20">
+              <span>Mission 3 complete. MISSION 04 UNLOCKED</span>
+            </div>
           </div>
 
-          {/* Proceed Navigation Button */}
           <div className="flex flex-col sm:flex-row gap-space-sm pt-space-xs">
             <Link
               href="/round3"
@@ -130,81 +142,48 @@ export default function Mission3LogicBoxes({ teamId, mission, attempt, onSuccess
           </div>
         </div>
       ) : (
-        <>
-          {/* 4 Interactive Boxes */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-space-md my-space-xs">
-            {boxes.map((box, idx) => {
-              const isSelected = selectedBox === box.label;
-              return (
-                <button
-                  key={idx}
-                  type="button"
-                  disabled={solved || isExpired || loading}
-                  onClick={() => handleSelectBox(box.label)}
-                  className={`p-space-md rounded-xl border-2 border-ink-primary text-left transition-all cursor-pointer flex flex-col justify-between min-h-[120px] ${
-                    isSelected
-                      ? 'bg-round-3-purple text-on-tertiary shadow-[4px_4px_0px_#0F172A] ring-4 ring-round-3-purple/30'
-                      : 'bg-canvas-cream hover:bg-surface-container-high text-ink-primary shadow-[2px_2px_0px_#0F172A]'
-                  } disabled:opacity-60 disabled:cursor-not-allowed`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-display-xl text-headline-lg font-black">
-                      BOX {box.label}
-                    </span>
-                    <span className="text-[24px]">📦</span>
-                  </div>
-                  <p className="font-headline-sm text-body-md font-bold mt-2">
-                    “{box.text}”
-                  </p>
-                </button>
-              );
-            })}
-          </div>
+        <form onSubmit={handleConfirmAnswer} className="flex flex-col gap-space-sm mt-space-xs">
+          <label className="font-headline-sm text-headline-sm text-ink-primary font-black uppercase">
+            Enter the 4-digit code
+          </label>
 
-          {/* Selection Bar & Confirm Answer Action */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-space-sm p-space-md bg-canvas-cream rounded-xl border-2 border-ink-primary shadow-sm mt-space-xs">
-            <div className="flex items-center gap-space-xs font-headline-sm text-headline-sm font-black text-ink-primary">
-              <span className="text-ink-secondary uppercase font-bold text-label-ticker">SELECTION:</span>
-              {selectedBox ? (
-                <span className="bg-round-3-purple text-on-tertiary px-space-md py-1 rounded-lg border-2 border-ink-primary font-black shadow-[2px_2px_0px_#0F172A] text-headline-sm">
-                  YOUR SELECTION: BOX {selectedBox}
-                </span>
-              ) : (
-                <span className="text-ink-secondary italic font-medium text-body-md">
-                  Click a box above to choose your answer
-                </span>
-              )}
-            </div>
-
+          <div className="flex flex-col sm:flex-row gap-space-sm">
+            <input
+              type="text"
+              maxLength={4}
+              value={codeInput}
+              onChange={e => setCodeInput(e.target.value)}
+              placeholder="ENTER 4-DIGIT CODE"
+              disabled={isExpired || loading}
+              className="flex-1 px-space-md py-space-sm bg-surface-container rounded-lg font-label-code text-headline-sm text-ink-primary tracking-widest focus:outline-none focus:bg-surface-card border-2 border-ink-primary shadow-inner disabled:opacity-50"
+            />
             <button
-              type="button"
-              disabled={!selectedBox || loading || isExpired}
-              onClick={handleConfirmAnswer}
-              className="w-full sm:w-auto px-space-xl py-space-sm bg-round-3-purple hover:bg-tertiary-container text-on-tertiary font-headline-sm text-headline-sm rounded-lg shadow-[2px_2px_0px_#0F172A] border-2 border-ink-primary disabled:opacity-50 transition-all cursor-pointer font-black shrink-0"
+              type="submit"
+              disabled={!codeInput.trim() || loading || isExpired}
+              className="px-space-xl py-space-sm bg-round-3-purple hover:bg-tertiary-container text-on-tertiary font-headline-sm text-headline-sm rounded-lg shadow-[2px_2px_0px_#0F172A] border-2 border-ink-primary disabled:opacity-50 transition-all cursor-pointer font-black shrink-0"
             >
-              {loading ? 'CHECKING...' : 'CONFIRM ANSWER →'}
+              {loading ? 'CHECKING...' : 'CONFIRM CODE →'}
             </button>
           </div>
 
-          {/* Error Message */}
           {errorMsg && (
-            <div className="p-space-sm bg-status-wrong/10 text-status-wrong rounded-lg font-headline-sm text-headline-sm font-black border border-status-wrong/30 flex items-center gap-space-xs">
-              <span className="material-symbols-outlined text-[20px]">cancel</span>
-              <span>{errorMsg}</span>
+            <div className="p-space-md bg-status-wrong/10 text-status-wrong rounded-xl font-headline-sm text-headline-sm font-black border border-status-wrong/30">
+              🚨 {errorMsg}
             </div>
           )}
-        </>
+        </form>
       )}
 
-      {/* Hints System */}
       <HintSystem
         teamId={teamId}
         missionNumber={3}
-        hints={content.hints ?? []}
+        hints={mission.handout_content.hints ?? [
+          'Divide each letter sum by 2 to find its numeric value.',
+          'A = 4, B = 7, C = 2, D = 9. Now write out C A D B.'
+        ]}
         initialHintCount={attempt?.hint_count ?? 0}
         isExpired={isExpired}
       />
     </div>
   );
 }
-

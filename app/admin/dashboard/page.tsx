@@ -74,6 +74,15 @@ export default function AdminDashboardPage() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'round1_attempts' }, () => loadData())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'round2_team_state' }, () => loadData())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'competition_settings' }, () => loadData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'anti_cheat_violations' }, (payload) => {
+        loadData();
+        if (payload.eventType === 'INSERT') {
+          const v = payload.new as any;
+          toast.warning(`Violation — ${v.violation_type}`, {
+            description: `Team flagged in ${v.round_name || 'exam'}`,
+          });
+        }
+      })
       .subscribe();
 
     return () => {

@@ -67,7 +67,7 @@ export default function VaultPage() {
   }
 
   return (
-    <AntiCheatGuard teamId={session.teamId}>
+    <AntiCheatGuard teamId={session.teamId} teamName={session.teamName} roundName="Round 3">
       <div className="min-h-screen bg-surface font-body-md text-on-surface antialiased">
         <Header activePath="/round3" />
         <main className="w-full pt-24 bg-surface min-h-[calc(100vh-80px)] max-w-[1440px] mx-auto px-margin-mobile lg:px-margin pb-space-xl">

@@ -13,6 +13,7 @@ import { Round1Attempt, Round1Question } from '@/types';
 import { formatTime } from '@/lib/utils';
 import BloomTransition from '@/components/animations/BloomTransition';
 import Header from '@/components/layout/Header';
+import FormattedQuestion from '@/components/quiz/FormattedQuestion';
 
 interface AnswerDetail {
   selected_option: string | null;
@@ -271,9 +272,12 @@ export default function Round1ResultPage() {
                     }`}
                   >
                     <div className="flex items-start justify-between gap-3 mb-3">
-                      <h3 className="font-bold text-slate-900 text-base leading-snug">
-                        Q{q.question_number}. {q.question_text}
-                      </h3>
+                      <FormattedQuestion
+                        text={q.question_text}
+                        prefix={`Q${q.question_number}.`}
+                        titleClassName="font-bold text-slate-900 text-base leading-snug"
+                        compact
+                      />
                       <span className={`text-xs font-black px-2.5 py-1 rounded-lg border uppercase whitespace-nowrap ${
                         isCorrect ? 'bg-emerald-200 text-emerald-900 border-emerald-400' : selected ? 'bg-red-200 text-red-900 border-red-400' : 'bg-slate-200 text-slate-700 border-slate-300'
                       }`}>

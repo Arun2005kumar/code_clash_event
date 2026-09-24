@@ -1,209 +1,170 @@
 'use client';
 
-// components/round3/missions/Mission5CodePuzzle.tsx
+// components/round3/missions/Mission5CodePuzzle.tsx — Mission 05: FIX THE PUZZLE
 import { useState } from 'react';
-import {
-  DndContext,
-  closestCenter,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-} from '@dnd-kit/core';
-import {
-  arrayMove,
-  SortableContext,
-  verticalListSortingStrategy,
-  useSortable,
-} from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
+import Link from 'next/link';
 import { validateMissionAnswerServer } from '@/lib/round3/missions';
-import ClueReveal from '../ClueReveal';
 import HintSystem from '../HintSystem';
 import { Round3Mission, Round3MissionAttempt } from '@/types';
 import { toast } from 'sonner';
-
-interface SortableStripProps {
-  id: string;
-  code: string;
-  index: number;
-}
-
-function SortableStrip({ id, code, index }: SortableStripProps) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    zIndex: isDragging ? 10 : 1,
-    opacity: isDragging ? 0.6 : 1,
-  };
-
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      {...attributes}
-      {...listeners}
-      className="p-space-sm bg-surface-muted rounded-lg border-2 border-ink-primary shadow-xs flex items-center justify-between cursor-grab hover:bg-surface-container-high transition-colors active:cursor-grabbing group select-none"
-    >
-      <div className="flex items-center gap-space-sm font-label-code text-body-sm">
-        <span className="material-symbols-outlined text-ink-secondary text-[16px] group-hover:text-ink-primary">
-          drag_indicator
-        </span>
-        <span className="text-ink-primary font-bold">{index + 1}</span>
-        <code className="text-round-1-blue font-bold">{code}</code>
-      </div>
-      <span className="font-label-sticker text-[10px] text-ink-secondary uppercase font-bold">
-        LINE 0{index + 1}
-      </span>
-    </div>
-  );
-}
 
 interface MissionProps {
   teamId: string;
   mission: Round3Mission;
   attempt?: Round3MissionAttempt;
   onSuccess: (clue: string) => void;
+  isExpired?: boolean;
 }
 
-export default function Mission5CodePuzzle({ teamId, mission, attempt, onSuccess }: MissionProps) {
-  const content = mission.handout_content;
-  const initialStrips = content.strips ?? [
-    "}",
-    "total = total * 2;",
-    "System.out.println(total);",
-    "int total = 1;",
-    "for (int i = 1; i <= 3; i++) {"
-  ];
+const STRIPS = [
+  '1. }',
+  '2. total = total * 2;',
+  '3. System.out.println(total);',
+  '4. int total = 1;',
+  '5. for (int i = 1; i <= 3; i++) {',
+];
 
-  // We map initialStrips to objects with IDs
-  const [strips, setStrips] = useState(
-    initialStrips.map((strip, idx) => ({ id: `strip-${idx}`, code: strip }))
-  );
-
-  const [answer, setAnswer] = useState(attempt?.submitted_answer ?? '');
+export default function Mission5CodePuzzle({ teamId, mission, attempt, onSuccess, isExpired = false }: MissionProps) {
+  const [outputInput, setOutputInput] = useState(attempt?.submitted_answer ?? '');
   const [loading, setLoading] = useState(false);
   const [solved, setSolved] = useState(attempt?.is_correct ?? false);
   const [cluePiece, setCluePiece] = useState(attempt?.clue_piece_revealed ?? '');
   const [errorMsg, setErrorMsg] = useState('');
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: { distance: 5 },
-    })
-  );
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (over && active.id !== over.id) {
-      setStrips((items) => {
-        const oldIndex = items.findIndex((item) => item.id === active.id);
-        const newIndex = items.findIndex((item) => item.id === over.id);
-        return arrayMove(items, oldIndex, newIndex);
-      });
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleConfirmAnswer = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!answer.trim()) return;
+    if (!outputInput.trim() || solved || isExpired || loading) return;
     setLoading(true);
     setErrorMsg('');
 
-    const res = await validateMissionAnswerServer(teamId, 5, answer);
+    const res = await validateMissionAnswerServer(teamId, 5, outputInput.trim());
     setLoading(false);
 
-    if (res.is_correct && res.clue_piece) {
+    if (res.is_correct) {
       setSolved(true);
-      setCluePiece(res.clue_piece);
-      onSuccess(res.clue_piece);
-      toast.success('Mission 5 Clear! Clue #5 revealed.');
+      const piece = res.clue_piece ?? '8';
+      setCluePiece(piece);
+      onSuccess(piece);
+      toast.success('SYSTEM RESTORED! Key #5 recovered.');
     } else {
-      setErrorMsg('Incorrect output number. Trace your loop carefully (total starts at 1, doubles 3 times)!');
-      toast.error('Incorrect. Try again!');
+      setErrorMsg("OUTPUT REJECTED: The system output doesn't match. Recheck the program order and trace the execution.");
+      toast.error('Output rejected. Try again!');
     }
   };
 
   return (
     <div className="bg-surface-card rounded-xl p-space-lg shadow-[3px_3px_0px_#0F172A] border-2 border-ink-primary flex flex-col gap-space-md">
       <div className="flex items-center justify-between">
-        <span className="px-space-sm py-space-xs bg-status-wrong/15 text-status-wrong rounded-md font-label-sticker text-label-sticker font-bold">
-          MODERATE+ • {mission.time_estimate}
+        <span className="px-space-sm py-space-xs bg-round-3-purple/15 text-round-3-purple rounded-md font-label-sticker text-label-sticker font-bold">
+          MODERATE+ • EST. SOLVE TIME: 5–6 MIN
         </span>
-        <span className="font-label-code text-label-sticker text-ink-secondary">MISSION 05</span>
+        <span className="font-label-code text-label-sticker text-ink-secondary font-bold">MISSION 05</span>
       </div>
 
-      <h1 className="font-headline-lg text-headline-lg text-ink-primary font-black uppercase">
-        {mission.title}
-      </h1>
+      <div>
+        <h1 className="font-headline-lg text-headline-lg text-ink-primary font-black uppercase">
+          FIX THE PUZZLE
+        </h1>
+        <p className="font-body-md text-body-md text-ink-secondary font-medium mt-1">
+          💻 SYSTEM FRAGMENTATION DETECTED: The final system has been corrupted. Five code fragments have been separated and shuffled. Your team must reconstruct the program in the correct order.
+        </p>
+      </div>
 
-      <p className="font-body-md text-body-md text-ink-secondary">
-        {content.briefing}
-      </p>
+      {isExpired && (
+        <div className="p-space-sm bg-status-wrong text-white rounded-lg font-headline-sm text-headline-sm font-black border-2 border-ink-primary shadow-[2px_2px_0px_#0F172A] flex items-center justify-center gap-space-xs uppercase">
+          <span className="material-symbols-outlined text-[22px]">timer_off</span>
+          <span>TIME EXPIRED — SUBMISSIONS DISABLED</span>
+        </div>
+      )}
 
-      {/* Drag & Drop Code Strips */}
+      {/* Handout & Strips Card */}
       <div className="p-space-md bg-canvas-cream rounded-xl border-2 border-ink-primary shadow-sm flex flex-col gap-space-sm">
-        <div className="flex items-center justify-between">
-          <span className="font-label-sticker text-label-sticker text-ink-secondary uppercase font-bold">
-            PARSON&apos;S CODE REORDERING (DRAG STRIPS TO FIX):
-          </span>
-          <span className="font-label-sticker text-[10px] text-round-3-purple font-bold">
-            ⚡ LIVE DRAG & DROP
-          </span>
+        <div className="p-space-sm bg-round-2-amber/20 border border-round-2-amber rounded-lg font-headline-sm text-headline-sm font-black text-ink-primary flex items-center gap-space-xs">
+          <span>🧩 HANDOUT REQUIRED:</span>
+          <span className="font-medium text-body-md">Collect the 5 physical code strips from the Game Master and arrange them physically before submitting your answer.</span>
         </div>
 
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-          <SortableContext items={strips.map((s) => s.id)} strategy={verticalListSortingStrategy}>
-            <div className="flex flex-col gap-space-xs">
-              {strips.map((strip, idx) => (
-                <SortableStrip key={strip.id} id={strip.id} code={strip.code} index={idx} />
-              ))}
-            </div>
-          </SortableContext>
-        </DndContext>
-
-        {/* Live Code Preview */}
-        <div className="mt-space-sm p-space-sm bg-inverse-surface rounded-lg border border-ink-primary text-inverse-on-surface font-label-code text-body-sm shadow-inner">
-          <span className="text-outline-variant text-[10px] block uppercase font-bold mb-1">
-            // REORDERED PROGRAM PREVIEW:
-          </span>
-          {strips.map((s) => (
-            <div key={s.id} className="text-surface font-mono">
-              {s.code}
+        <span className="font-label-sticker text-label-sticker text-ink-secondary uppercase font-bold tracking-wider block mt-1">
+          SHUFFLED CODE STRIPS:
+        </span>
+        <div className="flex flex-col gap-space-xs">
+          {STRIPS.map((strip, idx) => (
+            <div key={idx} className="p-space-sm bg-surface-card rounded-lg border-2 border-ink-primary font-mono text-body-md font-bold text-ink-primary shadow-xs">
+              {strip}
             </div>
           ))}
         </div>
       </div>
 
       {solved ? (
-        <ClueReveal missionNumber={5} cluePiece={cluePiece} />
+        <div className="p-space-lg bg-surface-card rounded-xl border-2 border-ink-primary shadow-[4px_4px_0px_#0F172A] flex flex-col gap-space-md animate-fadeIn">
+          <div className="flex flex-wrap items-center justify-between gap-space-xs">
+            <div className="px-space-md py-space-xs bg-status-correct text-on-tertiary rounded-full font-headline-sm text-headline-sm font-black inline-flex items-center gap-space-xs shadow-xs animate-bounce">
+              <span className="material-symbols-outlined text-[20px]">verified</span>
+              <span>✓ SYSTEM RESTORED!</span>
+            </div>
+            <div className="px-space-sm py-space-xs bg-status-correct/15 text-status-correct rounded-md font-label-sticker text-label-sticker font-extrabold border border-status-correct/30">
+              🔑 KEY #5 RECOVERED — 5/5 KEYS ACQUIRED
+            </div>
+          </div>
+
+          <div className="p-space-md bg-canvas-cream rounded-xl border-2 border-ink-primary flex flex-col gap-space-xs shadow-inner">
+            <div className="flex items-center gap-space-sm">
+              <span className="font-headline-sm text-headline-sm font-black text-ink-primary uppercase">
+                PROGRAM OUTPUT:
+              </span>
+              <span className="font-display-xl text-headline-lg text-status-correct font-black bg-surface-card px-space-md py-0.5 rounded border border-ink-primary shadow-xs">
+                8
+              </span>
+            </div>
+            <div className="flex items-center gap-space-xs text-status-correct font-headline-sm text-label-ticker font-bold mt-2 pt-2 border-t border-ink-primary/20">
+              <span>All five mission keys have been recovered. THE FINAL VAULT IS NOW ACCESSIBLE.</span>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-space-sm pt-space-xs">
+            <Link
+              href="/round3"
+              className="flex-1 py-space-sm px-space-md bg-canvas-cream hover:bg-surface-container-high text-ink-primary font-headline-sm text-label-ticker rounded-lg shadow-[2px_2px_0px_#0F172A] border-2 border-ink-primary flex items-center justify-center gap-space-xs text-center font-bold"
+            >
+              <span className="material-symbols-outlined text-[18px]">grid_view</span>
+              <span>MISSION HUB</span>
+            </Link>
+            <Link
+              href="/round3/vault"
+              className="flex-1 py-space-sm px-space-md bg-round-3-purple hover:bg-round-3-purple/90 text-on-tertiary font-headline-sm text-label-ticker rounded-lg shadow-[2px_2px_0px_#0F172A] border-2 border-ink-primary flex items-center justify-center gap-space-xs text-center font-black"
+            >
+              <span>ENTER THE FINAL VAULT 🔓 →</span>
+            </Link>
+          </div>
+        </div>
       ) : (
-        <form onSubmit={handleSubmit} className="flex flex-col gap-space-sm mt-space-sm">
-          <label className="font-headline-sm text-label-ticker text-ink-primary">
-            {content.question}
+        <form onSubmit={handleConfirmAnswer} className="flex flex-col gap-space-sm mt-space-xs">
+          <label className="font-headline-sm text-headline-sm text-ink-primary font-black uppercase">
+            What is the output of the reconstructed program?
           </label>
+
           <div className="flex flex-col sm:flex-row gap-space-sm">
             <input
               type="text"
-              value={answer}
-              onChange={(e) => setAnswer(e.target.value)}
-              placeholder="e.g. 8"
-              className="flex-1 px-space-md py-space-sm bg-surface-container rounded-lg font-label-code text-headline-sm text-ink-primary tracking-wider focus:outline-none focus:bg-surface-card border-2 border-ink-primary shadow-inner"
+              value={outputInput}
+              onChange={e => setOutputInput(e.target.value)}
+              placeholder="ENTER OUTPUT"
+              disabled={isExpired || loading}
+              className="flex-1 px-space-md py-space-sm bg-surface-container rounded-lg font-label-code text-headline-sm text-ink-primary tracking-wider focus:outline-none focus:bg-surface-card border-2 border-ink-primary shadow-inner disabled:opacity-50"
             />
             <button
               type="submit"
-              disabled={loading || !answer.trim()}
-              className="px-space-lg py-space-sm bg-round-3-purple hover:bg-tertiary-container text-on-tertiary font-headline-sm text-headline-sm rounded-lg shadow-[2px_2px_0px_#0F172A] border-2 border-ink-primary disabled:opacity-50 transition-all cursor-pointer"
+              disabled={!outputInput.trim() || loading || isExpired}
+              className="px-space-xl py-space-sm bg-round-3-purple hover:bg-tertiary-container text-on-tertiary font-headline-sm text-headline-sm rounded-lg shadow-[2px_2px_0px_#0F172A] border-2 border-ink-primary disabled:opacity-50 transition-all cursor-pointer font-black shrink-0"
             >
-              {loading ? 'CHECKING...' : 'SUBMIT OUTPUT →'}
+              {loading ? 'CHECKING...' : 'CONFIRM OUTPUT →'}
             </button>
           </div>
 
           {errorMsg && (
-            <div className="p-space-sm bg-status-wrong/10 text-status-wrong rounded-lg font-label-sticker text-label-sticker font-bold border border-status-wrong/30">
-              ⚠️ {errorMsg}
+            <div className="p-space-md bg-status-wrong/10 text-status-wrong rounded-xl font-headline-sm text-headline-sm font-black border border-status-wrong/30">
+              🚨 {errorMsg}
             </div>
           )}
         </form>
@@ -212,8 +173,12 @@ export default function Mission5CodePuzzle({ teamId, mission, attempt, onSuccess
       <HintSystem
         teamId={teamId}
         missionNumber={5}
-        hints={content.hints}
+        hints={mission.handout_content.hints ?? [
+          'What must exist before the loop can run?',
+          'The print happens once — is it inside or outside the loop?'
+        ]}
         initialHintCount={attempt?.hint_count ?? 0}
+        isExpired={isExpired}
       />
     </div>
   );

@@ -237,6 +237,15 @@ DROP POLICY IF EXISTS "round1_answers_update_all" ON round1_answers;
 CREATE POLICY "round1_answers_update_all" ON round1_answers FOR UPDATE USING (TRUE);
 
 DROP POLICY IF EXISTS "round2_team_state_select_own" ON round2_team_state;
+DROP POLICY IF EXISTS "round2_questions_select_all" ON round2_questions;
+CREATE POLICY "round2_questions_select_all" ON round2_questions FOR SELECT USING (TRUE);
+
+DROP POLICY IF EXISTS "round2_questions_insert_all" ON round2_questions;
+CREATE POLICY "round2_questions_insert_all" ON round2_questions FOR INSERT WITH CHECK (TRUE);
+
+DROP POLICY IF EXISTS "round2_questions_update_all" ON round2_questions;
+CREATE POLICY "round2_questions_update_all" ON round2_questions FOR UPDATE USING (TRUE);
+
 DROP POLICY IF EXISTS "round2_team_state_select_all" ON round2_team_state;
 CREATE POLICY "round2_team_state_select_all" ON round2_team_state FOR SELECT USING (TRUE);
 
