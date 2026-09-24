@@ -1,7 +1,9 @@
--- ============================================================
--- CODING CLUB CHALLENGE — Migration: 010_reset_all_rounds_function.sql
--- RPC Function to reset Round 1, Round 2, Round 3 stats and user accounts to start afresh
--- ============================================================
+-- Ensure all setting columns exist on competition_settings
+ALTER TABLE competition_settings
+  ADD COLUMN IF NOT EXISTS round1_initialized BOOLEAN DEFAULT FALSE,
+  ADD COLUMN IF NOT EXISTS round2_initialized BOOLEAN DEFAULT FALSE,
+  ADD COLUMN IF NOT EXISTS round3_initialized BOOLEAN DEFAULT FALSE,
+  ADD COLUMN IF NOT EXISTS round3_results_published BOOLEAN DEFAULT FALSE;
 
 CREATE OR REPLACE FUNCTION reset_all_rounds()
 RETURNS JSONB AS $$

@@ -4,6 +4,13 @@
 -- while PRESERVING all questions and missions.
 -- ============================================================
 
+-- Ensure all setting columns exist on competition_settings
+ALTER TABLE competition_settings
+  ADD COLUMN IF NOT EXISTS round1_initialized BOOLEAN DEFAULT FALSE,
+  ADD COLUMN IF NOT EXISTS round2_initialized BOOLEAN DEFAULT FALSE,
+  ADD COLUMN IF NOT EXISTS round3_initialized BOOLEAN DEFAULT FALSE,
+  ADD COLUMN IF NOT EXISTS round3_results_published BOOLEAN DEFAULT FALSE;
+
 CREATE OR REPLACE FUNCTION reset_all_rounds()
 RETURNS JSONB AS $$
 DECLARE
@@ -64,5 +71,5 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Execute the reset immediately for this migration
+-- Execute the reset immediately
 SELECT reset_all_rounds();
