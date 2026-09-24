@@ -10,9 +10,22 @@ import { getTeamSession } from '@/lib/auth/session';
 import { Round2Result, Round2TeamState } from '@/types';
 import CountUp from '@/components/animations/CountUp';
 
+interface AllQuestionKey {
+  id: string;
+  question_number: number;
+  question_text: string;
+  correct_option: string;
+  option_a: string;
+  option_b: string;
+  option_c: string;
+  option_d: string;
+  explanation?: string;
+}
+
 export default function Round2ResultPage() {
   const router = useRouter();
   const [results, setResults] = useState<Round2Result[]>([]);
+  const [allQuestions, setAllQuestions] = useState<AllQuestionKey[]>([]);
   const [teamState, setTeamState] = useState<Round2TeamState | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -22,12 +35,14 @@ export default function Round2ResultPage() {
 
     const load = async () => {
       const supabase = createClient();
-      const [{ data: res }, { data: state }] = await Promise.all([
+      const [{ data: res }, { data: state }, { data: qData }] = await Promise.all([
         supabase.from('round2_results').select('*, round2_questions(question_number)').eq('team_id', session.teamId).order('resolved_at'),
         supabase.from('round2_team_state').select('*').eq('team_id', session.teamId).single(),
+        supabase.from('round2_questions').select('*').order('question_number'),
       ]);
       setResults(res ?? []);
       setTeamState(state);
+      setAllQuestions(qData ?? []);
       setLoading(false);
     };
     load();
@@ -41,19 +56,24 @@ export default function Round2ResultPage() {
     );
   }
 
+  const getOptText = (q: AllQuestionKey, opt: string) => {
+    const map: Record<string, string> = { A: q.option_a, B: q.option_b, C: q.option_c, D: q.option_d };
+    return map[opt] || opt;
+  };
+
   return (
     <main className="min-h-screen bg-dot-grid p-6">
-      <div className="max-w-2xl mx-auto">
-        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-8">
+      <div className="max-w-3xl mx-auto space-y-6">
+        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-6">
           <span className="bg-amber-100 text-amber-700 text-xs font-bold px-3 py-1.5 rounded-full">ROUND 2 COMPLETE</span>
           <h1 className="text-3xl font-black text-slate-900 mt-3" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-            Auction Results
+            Auction Results & Answer Key
           </h1>
         </motion.div>
 
         {/* Final score + coins */}
         {teamState && (
-          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="card p-6 mb-6">
+          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="card p-6">
             <div className="grid grid-cols-2 gap-4 text-center">
               <div>
                 <p className="text-sm text-slate-500 mb-1">Final Score</p>
@@ -67,12 +87,12 @@ export default function Round2ResultPage() {
           </motion.div>
         )}
 
-        {/* Per-question results */}
-        <div className="space-y-3 mb-6">
+        {/* Per-question team results */}
+        <div className="space-y-3">
+          <h2 className="text-lg font-black text-slate-900">Your Lot Performance</h2>
           {results.map((result, i) => {
             const isWon = result.result === 'won_correct';
             const isWonWrong = result.result === 'won_incorrect';
-            const isNotWinner = result.result === 'not_winner';
 
             return (
               <motion.div
@@ -95,9 +115,9 @@ export default function Round2ResultPage() {
                     Q{(result as any).round2_questions?.question_number ?? i + 1}
                   </p>
                   <p className="text-sm text-slate-500">
-                    {isWon ? 'Won & Correct — +10 pts' :
-                     isWonWrong ? `Won & Wrong — -${result.bid_amount} coins` :
-                     'Not the winner this round'}
+                    {isWon ? 'Won & Correct' :
+                     isWonWrong ? `Won & Wrong` :
+                     'Not the winner this lot'}
                   </p>
                 </div>
                 <div className="text-right">
@@ -106,8 +126,8 @@ export default function Round2ResultPage() {
                       {result.score_change > 0 ? '+' : ''}{result.score_change} pts
                     </p>
                   )}
-                  {result.coin_change !== 0 && (
-                    <p className="text-sm text-amber-600">{result.coin_change} 🪙</p>
+                  {result.bid_amount > 0 && (
+                    <p className="text-sm text-amber-600">{result.bid_amount} 🪙 bid</p>
                   )}
                 </div>
               </motion.div>
@@ -115,11 +135,44 @@ export default function Round2ResultPage() {
           })}
         </div>
 
+        {/* ALL OFFICIAL ANSWERS SECTION */}
+        <div className="space-y-4 pt-4">
+          <div className="flex items-center gap-2">
+            <span className="text-2xl">🔑</span>
+            <h2 className="text-xl font-black text-slate-900">Round 2 Official Answer Key</h2>
+          </div>
+          <p className="text-xs text-slate-500">All questions and official solutions are revealed below now that Round 2 has concluded.</p>
+
+          <div className="space-y-4">
+            {allQuestions.map((q) => (
+              <div key={q.id} className="bg-white p-5 rounded-2xl border-2 border-slate-200 shadow-sm space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="px-2.5 py-1 bg-amber-100 text-amber-800 font-extrabold text-xs rounded-lg">
+                    LOT #{String(q.question_number).padStart(2, '0')}
+                  </span>
+                  <span className="px-3 py-1 bg-emerald-100 text-emerald-800 font-black text-xs rounded-full">
+                    CORRECT: OPTION {q.correct_option}
+                  </span>
+                </div>
+                <h3 className="font-bold text-slate-900 text-base">{q.question_text}</h3>
+                <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-950 font-medium">
+                  <strong>Official Answer:</strong> Option {q.correct_option} — {getOptText(q, q.correct_option)}
+                </div>
+                {q.explanation && (
+                  <p className="text-xs text-slate-600 italic">
+                    💡 {q.explanation}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
         <motion.button
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }}
           whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
           onClick={() => router.push('/round3')}
-          className="w-full py-4 bg-slate-900 text-white font-bold rounded-2xl"
+          className="w-full py-4 bg-slate-900 text-white font-bold rounded-2xl cursor-pointer"
         >
           Continue to Round 3 →
         </motion.button>

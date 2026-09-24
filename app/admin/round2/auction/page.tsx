@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 // app/admin/round2/auction/page.tsx — Reworked Admin Auction Control Room
 import { useEffect, useState, useRef, useCallback } from 'react';
@@ -94,29 +94,53 @@ export default function AdminAuctionPage() {
     }
     setHammering(true);
     const supabase = getSupabase();
-    const winner = bids.find(b => b.team_id === pendingWinnerId);
-    const teamLabel = winner?.team_name || 'Team';
+    const currentWinner = bids.find(b => b.team_id === pendingWinnerId);
+    const currentWinnerIdx = bids.findIndex(b => b.team_id === pendingWinnerId);
+    const teamLabel = currentWinner?.team_name || 'Team';
 
-    const { data, error } = await supabase.rpc('lock_hammer_with_verdict', {
-      p_question_id: currentQuestion.id,
-      p_winning_team_id: pendingWinnerId,
-      p_is_correct: isCorrect,
-    });
-
-    if (error || !data?.[0]?.success) {
-      toast.error(data?.[0]?.message || 'Failed: ' + (error?.message || 'unknown'));
-      setHammering(false); return;
-    }
-
-    const pts = data[0].score_change;
-    setHammerDropped(true);
-    setAwaitingVerdict(false);
     if (isCorrect) {
+      const { data, error } = await supabase.rpc('lock_hammer_with_verdict', {
+        p_question_id: currentQuestion.id,
+        p_winning_team_id: pendingWinnerId,
+        p_is_correct: true,
+      });
+
+      if (error || !data?.[0]?.success) {
+        toast.error(data?.[0]?.message || 'Failed: ' + (error?.message || 'unknown'));
+        setHammering(false); return;
+      }
+
+      const pts = data[0].score_change;
+      setHammerDropped(true);
+      setAwaitingVerdict(false);
       setStatusMsg(`CORRECT: ${teamLabel} +${pts} pts. Coins reset to 100.`);
       toast.success(`HAMMER! ${teamLabel} CORRECT! +${pts} pts | Coins reset to 100`);
     } else {
-      setStatusMsg(`WRONG: ${teamLabel} answered incorrectly. No coin recovery.`);
-      toast.error(`HAMMER! ${teamLabel} WRONG! No recovery.`);
+      // Wrong bid: check top 3 sequential chance rule!
+      // Only top 3 highest bids have a chance (indices 0, 1, 2)
+      if (currentWinnerIdx >= 0 && currentWinnerIdx < 2 && bids.length > currentWinnerIdx + 1) {
+        const nextTeam = bids[currentWinnerIdx + 1];
+        setPendingWinnerId(nextTeam.team_id);
+        setStatusMsg(`WRONG: ${teamLabel} failed. Chance #${currentWinnerIdx + 2} passed to ${nextTeam.team_name} (${currentWinnerIdx + 2}${currentWinnerIdx + 1 === 1 ? 'nd' : 'rd'} highest bid)!`);
+        toast.warning(`WRONG: ${teamLabel}! Chance passed to #${currentWinnerIdx + 2} (${nextTeam.team_name})`);
+      } else {
+        // No more chances in top 3! Finalize lot as resolved with no correct answer
+        const { data, error } = await supabase.rpc('lock_hammer_with_verdict', {
+          p_question_id: currentQuestion.id,
+          p_winning_team_id: pendingWinnerId,
+          p_is_correct: false,
+        });
+
+        if (error || !data?.[0]?.success) {
+          toast.error(data?.[0]?.message || 'Failed: ' + (error?.message || 'unknown'));
+          setHammering(false); return;
+        }
+
+        setHammerDropped(true);
+        setAwaitingVerdict(false);
+        setStatusMsg(`WRONG: Top 3 chances exhausted for this lot. No score awarded.`);
+        toast.error(`HAMMER! Top 3 attempts exhausted. Lot closed.`);
+      }
     }
     loadData();
     setHammering(false);
@@ -376,7 +400,8 @@ export default function AdminAuctionPage() {
                     <td className="py-space-md px-space-md font-bold text-ink-primary">
                       <div className="flex items-center gap-2">
                         {bid.team_name || `Team ${index+1}`}
-                        {isHighest && <span className="px-1.5 py-0.5 bg-round-2-orange/20 text-round-2-orange rounded text-[11px] font-label-sticker border border-ink-primary">TOP</span>}
+                        {index < 3 && <span className="px-1.5 py-0.5 bg-round-2-orange/20 text-round-2-orange rounded text-[11px] font-label-sticker border border-ink-primary font-bold">CHANCE #{index+1}</span>}
+                        {index >= 3 && <span className="px-1.5 py-0.5 bg-surface-muted text-ink-secondary rounded text-[10px] font-label-sticker border border-slate-300">NO CHANCE</span>}
                         {bid.is_winner && <span className="px-1.5 py-0.5 bg-status-correct/20 text-status-correct rounded text-[11px] font-label-sticker border border-ink-primary">WINNER</span>}
                       </div>
                     </td>

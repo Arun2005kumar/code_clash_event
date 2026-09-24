@@ -415,6 +415,70 @@ export default function HomePage() {
               </div>
             </div>
 
+            {/* Event Rules & Guidelines Section */}
+            <div className="mt-space-xl pt-space-lg max-w-5xl mx-auto relative z-10" id="mission-rounds">
+              <div className="flex items-center justify-between mb-space-md flex-wrap gap-space-sm">
+                <div>
+                  <span className="font-label-sticker text-label-sticker text-round-2-orange uppercase tracking-widest block font-bold">OFFICIAL TOURNAMENT CODE</span>
+                  <h3 className="font-headline-lg text-headline-lg text-ink-primary font-black tracking-tight">RULES & REGULATIONS</h3>
+                </div>
+                <div className="flex items-center gap-space-xs px-space-sm py-1 bg-round-2-amber/20 rounded-full shadow-sm text-ink-primary font-label-sticker text-label-sticker border border-ink-primary">
+                  <span className="material-symbols-outlined text-[16px] text-round-2-orange">gavel</span>
+                  <span className="font-bold">FAIR PLAY ENFORCED</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-space-md">
+                {/* Round 1 Rules */}
+                <div className="bg-surface-card rounded-xl p-space-md shadow-md border-2 border-ink-primary flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center gap-2 mb-space-sm text-round-1-blue font-headline-sm font-black">
+                      <span className="material-symbols-outlined text-[24px]">quiz</span>
+                      <span>ROUND 1 — MCQ SPRINT</span>
+                    </div>
+                    <ul className="space-y-space-xs font-body-sm text-ink-secondary list-disc list-inside">
+                      <li><strong className="text-ink-primary">30 Questions:</strong> Algorithmic trivia, Java syntax & DSA.</li>
+                      <li><strong className="text-ink-primary">25 Minutes:</strong> Hard stop timer upon sprint initiation.</li>
+                      <li><strong className="text-ink-primary">Anti-Cheat:</strong> Tab switches are logged and flagged automatically.</li>
+                      <li><strong className="text-ink-primary">Scoring:</strong> Automated grading upon manual submit or timeout.</li>
+                    </ul>
+                  </div>
+                </div>
+
+                {/* Round 2 Rules */}
+                <div className="bg-surface-card rounded-xl p-space-md shadow-md border-2 border-ink-primary flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center gap-2 mb-space-sm text-round-2-orange font-headline-sm font-black">
+                      <span className="material-symbols-outlined text-[24px]">gavel</span>
+                      <span>ROUND 2 — CODE AUCTION</span>
+                    </div>
+                    <ul className="space-y-space-xs font-body-sm text-ink-secondary list-disc list-inside">
+                      <li><strong className="text-ink-primary">100 Starting Coins:</strong> Every team starts with a 100 coin purse.</li>
+                      <li><strong className="text-ink-primary">Bidding War:</strong> Bid coins on buggy code lots across 6 questions.</li>
+                      <li><strong className="text-ink-primary">Highest Bidders:</strong> Top 3 highest bidding teams get sequential chances if top bid is incorrect.</li>
+                      <li><strong className="text-ink-primary">Official Answers:</strong> Revealed at the end of Round 2.</li>
+                    </ul>
+                  </div>
+                </div>
+
+                {/* Round 3 Rules */}
+                <div className="bg-surface-card rounded-xl p-space-md shadow-md border-2 border-ink-primary flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center gap-2 mb-space-sm text-round-3-purple font-headline-sm font-black">
+                      <span className="material-symbols-outlined text-[24px]">vpn_key</span>
+                      <span>ROUND 3 — TECH HEIST</span>
+                    </div>
+                    <ul className="space-y-space-xs font-body-sm text-ink-secondary list-disc list-inside">
+                      <li><strong className="text-ink-primary">Top Teams:</strong> Qualifying teams breach 5 infiltration targets.</li>
+                      <li><strong className="text-ink-primary">Clue Collection:</strong> Recover 5 secret keys to unlock the central mainframe vault.</li>
+                      <li><strong className="text-ink-primary">Live Chronometer:</strong> Continuous team timer active across all missions.</li>
+                      <li><strong className="text-ink-primary">Vault Breach:</strong> Crack the final passcode to complete the challenge.</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* Live Hackathon Stats Strip */}
             <div className="mt-space-xl max-w-5xl mx-auto bg-surface-muted rounded-xl p-space-md shadow-sm flex flex-wrap items-center justify-between gap-space-md border-2 border-ink-primary">
               <div className="flex items-center gap-space-sm">

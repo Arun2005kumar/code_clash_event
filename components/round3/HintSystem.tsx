@@ -10,14 +10,15 @@ interface HintSystemProps {
   missionNumber: number;
   hints: string[];
   initialHintCount?: number;
+  isExpired?: boolean;
 }
 
-export default function HintSystem({ teamId, missionNumber, hints, initialHintCount = 0 }: HintSystemProps) {
+export default function HintSystem({ teamId, missionNumber, hints, initialHintCount = 0, isExpired = false }: HintSystemProps) {
   const [hintCount, setHintCount] = useState(initialHintCount);
   const [loading, setLoading] = useState(false);
 
   const handleRevealHint = async () => {
-    if (hintCount >= hints.length) return;
+    if (hintCount >= hints.length || isExpired) return;
     setLoading(true);
     const success = await incrementHintCountServer(teamId, missionNumber);
     setLoading(false);
@@ -39,11 +40,11 @@ export default function HintSystem({ teamId, missionNumber, hints, initialHintCo
           <button
             type="button"
             onClick={handleRevealHint}
-            disabled={loading}
-            className="inline-flex items-center gap-space-xs text-ink-primary hover:text-round-2-orange font-label-sticker text-label-sticker transition-colors cursor-pointer bg-round-2-amber/15 px-space-sm py-1 rounded-md border border-round-2-amber/40"
+            disabled={loading || isExpired}
+            className="inline-flex items-center gap-space-xs text-ink-primary hover:text-round-2-orange font-label-sticker text-label-sticker transition-colors cursor-pointer bg-round-2-amber/15 px-space-sm py-1 rounded-md border border-round-2-amber/40 disabled:opacity-50"
           >
             <span className="material-symbols-outlined text-[16px] text-round-2-orange">lightbulb</span>
-            <span>{loading ? 'REVEALING...' : `💡 REVEAL HINT #${hintCount + 1} (+30s)`}</span>
+            <span>{loading ? 'REVEALING...' : `💡 REVEAL HINT #${hintCount + 1} (+30 SEC PENALTY)`}</span>
           </button>
         )}
       </div>

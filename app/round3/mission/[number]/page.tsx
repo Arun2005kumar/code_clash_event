@@ -8,6 +8,7 @@ import { createClient } from '@/lib/supabase/client';
 import { getTeamSession } from '@/lib/auth/session';
 import AntiCheatGuard from '@/components/anti-cheat/AntiCheatGuard';
 import Header from '@/components/layout/Header';
+import Round3Timer from '@/components/round3/Round3Timer';
 import Mission1HiddenObject from '@/components/round3/missions/Mission1HiddenObject';
 import Mission2HackerReceipt from '@/components/round3/missions/Mission2HackerReceipt';
 import Mission3LogicBoxes from '@/components/round3/missions/Mission3LogicBoxes';
@@ -27,6 +28,8 @@ export default function DynamicMissionPage() {
   const [round3Active, setRound3Active] = useState(false);
   const [mission, setMission] = useState<Round3Mission | null>(null);
   const [attempt, setAttempt] = useState<Round3MissionAttempt | undefined>(undefined);
+  const [isLocked, setIsLocked] = useState(false);
+  const [isExpired, setIsExpired] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -55,12 +58,25 @@ export default function DynamicMissionPage() {
     }
     setRound3Active(true);
 
+    // Fetch attempts
+    const attempts = await getTeamRound3Attempts(teamId);
+
+    // Check sequential locking: Mission N requires Mission N-1 to be correct
+    if (mNum > 1) {
+      const prevSolved = attempts.some(a => a.mission_number === mNum - 1 && a.is_correct);
+      if (!prevSolved) {
+        setIsLocked(true);
+        setLoading(false);
+        return;
+      }
+    }
+    setIsLocked(false);
+
     // Fetch mission
     const mData = await getRound3MissionByNumber(mNum);
     setMission(mData);
 
-    // Fetch attempt
-    const attempts = await getTeamRound3Attempts(teamId);
+    // Fetch attempt for current mission
     const myAttempt = attempts.find(a => a.mission_number === mNum);
     setAttempt(myAttempt);
 
@@ -91,7 +107,7 @@ export default function DynamicMissionPage() {
     );
   }
 
-  if (!round3Active || !mission) {
+  if (!round3Active || isLocked || !mission) {
     return (
       <div className="min-h-screen bg-surface font-body-md text-on-surface antialiased">
         <Header activePath="/round3" />
@@ -99,16 +115,18 @@ export default function DynamicMissionPage() {
           <div className="max-w-xl mx-auto p-space-lg bg-surface-card rounded-xl border-2 border-ink-primary shadow-[4px_4px_0px_#0F172A] text-center flex flex-col items-center gap-space-md my-space-xl">
             <span className="text-[48px]">🔒</span>
             <h1 className="font-headline-lg text-headline-lg font-black text-ink-primary uppercase">
-              MISSION UNAVAILABLE
+              {isLocked ? `MISSION 0${missionNumber} IS LOCKED` : 'MISSION UNAVAILABLE'}
             </h1>
-            <p className="font-body-md text-body-md text-ink-secondary">
-              This mission is currently locked or Round 3 is inactive.
+            <p className="font-body-md text-body-md text-ink-secondary font-medium">
+              {isLocked
+                ? `You must complete Mission 0${missionNumber - 1} before accessing this target node.`
+                : 'This mission is currently unavailable or Round 3 is inactive.'}
             </p>
             <Link
               href="/round3"
-              className="px-space-md py-space-xs bg-round-3-purple text-on-tertiary rounded-lg font-headline-sm text-label-ticker border border-ink-primary shadow-[2px_2px_0px_#0F172A]"
+              className="px-space-md py-space-xs bg-round-3-purple text-on-tertiary rounded-lg font-headline-sm text-label-ticker border-2 border-ink-primary shadow-[2px_2px_0px_#0F172A] font-extrabold"
             >
-              RETURN TO MISSION HUB →
+              ← RETURN TO MISSION HUB
             </Link>
           </div>
         </main>
@@ -122,7 +140,7 @@ export default function DynamicMissionPage() {
         <Header activePath="/round3" />
         <main className="w-full pt-24 bg-surface min-h-[calc(100vh-80px)] max-w-[1440px] mx-auto px-margin-mobile lg:px-margin pb-space-xl">
           {/* Top Mission Header Strip */}
-          <div className="flex items-center justify-between gap-space-md mb-space-md">
+          <div className="flex flex-wrap items-center justify-between gap-space-md mb-space-md">
             <Link
               href="/round3"
               className="inline-flex items-center gap-space-xs px-space-md py-space-xs bg-surface-card border-2 border-ink-primary rounded-lg text-ink-primary font-headline-sm text-label-ticker shadow-[2px_2px_0px_#0F172A] hover:translate-x-[-2px] transition-transform"
@@ -131,9 +149,12 @@ export default function DynamicMissionPage() {
               <span>BACK TO MISSION HUB</span>
             </Link>
 
-            <span className="font-label-sticker text-label-sticker text-ink-secondary bg-surface-card px-space-md py-space-xs rounded-full border-2 border-ink-primary font-bold">
-              STAGE 0{missionNumber} / 05
-            </span>
+            <div className="flex items-center gap-space-sm">
+              <Round3Timer teamId={session.teamId} onExpire={() => setIsExpired(true)} />
+              <span className="font-label-sticker text-label-sticker text-ink-secondary bg-surface-card px-space-md py-space-xs rounded-full border-2 border-ink-primary font-bold">
+                STAGE 0{missionNumber} / 05
+              </span>
+            </div>
           </div>
 
           {/* Render target mission component */}
@@ -143,6 +164,7 @@ export default function DynamicMissionPage() {
               mission={mission}
               attempt={attempt}
               onSuccess={handleSuccess}
+              isExpired={isExpired}
             />
           )}
 
@@ -152,6 +174,7 @@ export default function DynamicMissionPage() {
               mission={mission}
               attempt={attempt}
               onSuccess={handleSuccess}
+              isExpired={isExpired}
             />
           )}
 
@@ -161,6 +184,7 @@ export default function DynamicMissionPage() {
               mission={mission}
               attempt={attempt}
               onSuccess={handleSuccess}
+              isExpired={isExpired}
             />
           )}
 

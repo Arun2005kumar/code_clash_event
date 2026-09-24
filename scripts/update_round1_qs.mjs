@@ -28,7 +28,7 @@ const questions = [
   },
   {
     question_number: 3,
-    question_text: "What will be the output of the following Java expression?\n\nint x = 5;\nSystem.out.println(x++ + ++x);",
+    question_text: "What will be the output of the following Java expression?\nint x = 5;\nSystem.out.println(x++ + ++x);",
     option_a: "10",
     option_b: "11",
     option_c: "12",
@@ -78,7 +78,7 @@ const questions = [
   },
   {
     question_number: 8,
-    question_text: "What is the time complexity of the following code?\n\nfor(int i = 0; i < n; i++) {\n    for(int j = 0; j < n; j++) {\n        System.out.println(i + j);\n    }\n}",
+    question_text: "What is the time complexity of the following code?\nfor(int i = 0; i < n; i++) {\n    for(int j = 0; j < n; j++) {\n        System.out.println(i + j);\n    }\n}",
     option_a: "O(1)",
     option_b: "O(n)",
     option_c: "O(n²)",
@@ -98,7 +98,7 @@ const questions = [
   },
   {
     question_number: 10,
-    question_text: "What is the output of the following Java code?\n\nString s1 = \"Java\";\nString s2 = \"Java\";\nString s3 = new String(\"Java\");\n\nSystem.out.println(s1 == s2);\nSystem.out.println(s1 == s3);",
+    question_text: "What is the output of the following Java code?\nString s1 = \"Java\";\nString s2 = \"Java\";\nString s3 = new String(\"Java\");\nSystem.out.println(s1 == s2);\nSystem.out.println(s1 == s3);",
     option_a: "true true",
     option_b: "true false",
     option_c: "false true",
@@ -138,7 +138,7 @@ const questions = [
   },
   {
     question_number: 14,
-    question_text: "What will be the output?\n\nint[] arr = {10, 20, 30, 40, 50};\nSystem.out.println(arr[arr.length - 2]);",
+    question_text: "What will be the output of the following Java code?\nint[] arr = {10, 20, 30, 40, 50};\nSystem.out.println(arr[arr.length - 2]);",
     option_a: "30",
     option_b: "40",
     option_c: "50",
@@ -188,7 +188,7 @@ const questions = [
   },
   {
     question_number: 19,
-    question_text: "What is the auxiliary space complexity of the following loop?\n\nfor(int i = 0; i < n; i++) {\n    System.out.println(i);\n}",
+    question_text: "What is the auxiliary space complexity of the following loop?\nfor(int i = 0; i < n; i++) {\n    System.out.println(i);\n}",
     option_a: "O(1)",
     option_b: "O(n)",
     option_c: "O(log n)",
@@ -208,7 +208,7 @@ const questions = [
   },
   {
     question_number: 21,
-    question_text: "What will be the output?\n\nStack<Integer> stack = new Stack<>();\n\nstack.push(10);\nstack.push(20);\nstack.push(30);\n\nstack.pop();\nstack.push(40);\nstack.pop();\n\nSystem.out.println(stack.peek());",
+    question_text: "What will be the output of the following Java code?\nStack<Integer> stack = new Stack<>();\nstack.push(10);\nstack.push(20);\nstack.push(30);\nstack.pop();\nstack.push(40);\nstack.pop();\nSystem.out.println(stack.peek());",
     option_a: "10",
     option_b: "20",
     option_c: "30",
@@ -228,7 +228,7 @@ const questions = [
   },
   {
     question_number: 23,
-    question_text: "Consider the sorted array:\n\n[2, 4, 6, 8, 10, 12, 14]\n\nUsing the two-pointer technique, what pair is found first if the target sum is 16?",
+    question_text: "Consider the sorted array: [2, 4, 6, 8, 10, 12, 14]. Using the two-pointer technique, what pair is found first if the target sum is 16?",
     option_a: "2 and 14",
     option_b: "4 and 12",
     option_c: "6 and 10",
@@ -288,7 +288,7 @@ const questions = [
   },
   {
     question_number: 29,
-    question_text: "What is the output of the following Java code?\n\nint result = 0;\nfor(int i = 1; i <= 4; i *= 2) {\n    result += i;\n}\nSystem.out.println(result);",
+    question_text: "What is the output of the following Java code?\nint result = 0;\nfor(int i = 1; i <= 4; i *= 2) {\n    result += i;\n}\nSystem.out.println(result);",
     option_a: "4",
     option_b: "6",
     option_c: "8",
@@ -298,7 +298,7 @@ const questions = [
   },
   {
     question_number: 30,
-    question_text: "A stack is initially empty. The following operations are performed:\n\nPUSH(10)\nPUSH(20)\nPUSH(30)\nPOP()\nPUSH(40)\n\nWhat will be the element at the top of the stack?",
+    question_text: "A stack is initially empty. The following operations are performed:\nPUSH(10)\nPUSH(20)\nPUSH(30)\nPOP()\nPUSH(40)\nWhat will be the element at the top of the stack?",
     option_a: "10",
     option_b: "20",
     option_c: "30",

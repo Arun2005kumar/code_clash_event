@@ -8,6 +8,7 @@ import { createClient } from '@/lib/supabase/client';
 import { getTeamSession } from '@/lib/auth/session';
 import AntiCheatGuard from '@/components/anti-cheat/AntiCheatGuard';
 import Header from '@/components/layout/Header';
+import Round3Timer from '@/components/round3/Round3Timer';
 import VaultEntry from '@/components/round3/VaultEntry';
 import VaultSuccess from '@/components/round3/VaultSuccess';
 import { getTeamRound3Attempts, getOrCreateRound3TeamState } from '@/lib/round3/state';
@@ -79,9 +80,12 @@ export default function VaultPage() {
               <span>BACK TO MISSION HUB</span>
             </Link>
 
-            <span className="font-label-sticker text-label-sticker text-round-3-purple bg-surface-card px-space-md py-space-xs rounded-full border-2 border-ink-primary font-bold">
-              ⚡ MAINFRAME VAULT CORE
-            </span>
+            <div className="flex items-center gap-space-sm">
+              <Round3Timer teamId={session.teamId} />
+              <span className="font-label-sticker text-label-sticker text-round-3-purple bg-surface-card px-space-md py-space-xs rounded-full border-2 border-ink-primary font-bold">
+                ⚡ MAINFRAME VAULT CORE
+              </span>
+            </div>
           </div>
 
           {unlocked ? (

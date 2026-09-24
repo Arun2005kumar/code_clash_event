@@ -499,7 +499,7 @@ export default function Round2Page() {
                           </div>
                         </div>
                         <div className="text-right">
-                          <span className="font-label-ticker text-label-ticker text-status-correct font-extrabold px-space-sm py-1 bg-status-correct/10 rounded-lg inline-block border border-ink-primary">+2 pts</span>
+                          <span className="font-label-ticker text-label-ticker text-ink-primary font-bold px-space-sm py-1 bg-surface-card rounded-lg inline-block border border-ink-primary">1 Coin</span>
                         </div>
                       </div>
 
@@ -520,7 +520,7 @@ export default function Round2Page() {
                           </div>
                         </div>
                         <div className="text-right">
-                          <span className="font-label-ticker text-label-ticker text-status-correct font-extrabold px-space-sm py-1 bg-status-correct/10 rounded-lg inline-block border border-ink-primary">+5 pts</span>
+                          <span className="font-label-ticker text-label-ticker text-ink-primary font-bold px-space-sm py-1 bg-surface-card rounded-lg inline-block border border-ink-primary">2 Coins</span>
                         </div>
                       </div>
 
@@ -545,7 +545,7 @@ export default function Round2Page() {
                           </div>
                         </div>
                         <div className="text-right relative z-10">
-                          <span className="font-label-ticker text-label-ticker text-on-primary bg-round-2-orange font-extrabold px-space-sm py-1 rounded-lg inline-block shadow-sm border border-ink-primary">+10 pts</span>
+                          <span className="font-label-ticker text-label-ticker text-on-primary bg-round-2-orange font-extrabold px-space-sm py-1 rounded-lg inline-block shadow-sm border border-ink-primary">4 Coins</span>
                         </div>
                       </div>
                     </div>
@@ -634,16 +634,15 @@ export default function Round2Page() {
                             </p>
                           </div>
                         )}
-
-                        {/* Revealed Correct Answer */}
-                        {currentQuestion.correct_option && (
-                          <div className="p-space-sm bg-canvas-cream rounded-lg border border-ink-primary flex items-center justify-between">
-                            <span className="font-label-ticker text-ink-secondary uppercase">OFFICIAL ANSWER:</span>
-                            <span className="font-headline-sm font-black text-status-correct">
-                              Option {currentQuestion.correct_option} — {getOptionText(currentQuestion.correct_option as Option)}
-                            </span>
-                          </div>
-                        )}
+                        
+                        {/* Locked Notice for resolved questions */}
+                        <div className="p-space-sm bg-round-2-amber/10 rounded-lg border-2 border-round-2-amber flex items-center justify-between">
+                          <span className="font-label-ticker text-ink-primary font-bold uppercase flex items-center gap-1.5">
+                            <span className="material-symbols-outlined text-round-2-orange text-[20px]">lock</span>
+                            AUCTION LOT LOCKED & RESOLVED
+                          </span>
+                          <span className="font-label-sticker text-label-sticker text-ink-secondary">ALL ANSWERS REVEALED AT END OF ROUND 2</span>
+                        </div>
                       </div>
                     ) : (
                       <>
@@ -656,7 +655,7 @@ export default function Round2Page() {
                             </span>
                           </div>
                           <span className="px-space-xs py-0.5 rounded bg-status-correct text-on-primary font-label-sticker text-label-sticker font-bold uppercase border border-ink-primary">
-                            {myBid ? 'LOCKED' : 'STAGED'}
+                            {myBid ? 'LOCKED BY HAMMER' : 'STAGED'}
                           </span>
                         </div>
 

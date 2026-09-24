@@ -1,9 +1,9 @@
 'use client';
 
 // components/round3/MissionHub.tsx
-import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import MissionCard from './MissionCard';
+import Round3Timer from './Round3Timer';
 import { Round3Mission, Round3MissionAttempt, Round3TeamState } from '@/types';
 
 interface MissionHubProps {
@@ -14,31 +14,6 @@ interface MissionHubProps {
 }
 
 export default function MissionHub({ teamName, missions, attempts, teamState }: MissionHubProps) {
-  const [elapsedSeconds, setElapsedSeconds] = useState(0);
-
-  // Timer starting from started_at
-  useEffect(() => {
-    if (!teamState?.started_at) return;
-    const startMs = new Date(teamState.started_at).getTime();
-
-    const updateTimer = () => {
-      if (teamState.completed_at && teamState.finish_time_seconds) {
-        setElapsedSeconds(teamState.finish_time_seconds);
-        return;
-      }
-      const nowMs = Date.now();
-      const diffSec = Math.max(0, Math.floor((nowMs - startMs) / 1000));
-      setElapsedSeconds(diffSec);
-    };
-
-    updateTimer();
-    const interval = setInterval(updateTimer, 1000);
-    return () => clearInterval(interval);
-  }, [teamState]);
-
-  const mins = String(Math.floor(elapsedSeconds / 60)).padStart(2, '0');
-  const secs = String(elapsedSeconds % 60).padStart(2, '0');
-
   const solvedMap = new Map<number, Round3MissionAttempt>();
   attempts.forEach(a => {
     if (a.is_correct) solvedMap.set(a.mission_number, a);
@@ -98,23 +73,10 @@ export default function MissionHub({ teamName, missions, attempts, teamState }: 
               </div>
             </div>
 
-            {/* Elapsed Timer */}
-            <div className="flex items-center gap-space-sm px-space-md py-space-xs bg-ink-primary text-surface rounded-lg shadow-[2px_2px_0px_#EC4899]">
-              <span className="material-symbols-outlined text-round-3-pink text-[20px] animate-pulse">
-                timer
-              </span>
-              <div className="flex flex-col">
-                <div className="flex items-center gap-space-xs">
-                  <span className="font-label-code text-label-code text-surface font-black tracking-widest">
-                    {mins}:{secs}
-                  </span>
-                  <span className="w-1.5 h-1.5 rounded-full bg-status-correct animate-ping" />
-                </div>
-                <span className="font-label-sticker text-[9px] text-surface-container-highest tracking-tight uppercase font-bold">
-                  TICK. TOCK. CRACK VAULT.
-                </span>
-              </div>
-            </div>
+            {/* Prominent Global Timer */}
+            {teamState?.team_id && (
+              <Round3Timer teamId={teamState.team_id} />
+            )}
           </div>
         </div>
       </section>
@@ -171,13 +133,17 @@ export default function MissionHub({ teamName, missions, attempts, teamState }: 
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-space-md">
-          {missions.map(mission => (
-            <MissionCard
-              key={mission.id}
-              mission={mission}
-              attempt={solvedMap.get(mission.mission_number)}
-            />
-          ))}
+          {missions.map(mission => {
+            const isAvailable = mission.mission_number === 1 || solvedMap.has(mission.mission_number - 1);
+            return (
+              <MissionCard
+                key={mission.id}
+                mission={mission}
+                attempt={solvedMap.get(mission.mission_number)}
+                isAvailable={isAvailable}
+              />
+            );
+          })}
         </div>
       </section>
 

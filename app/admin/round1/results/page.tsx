@@ -14,7 +14,8 @@ interface ResultRow {
   total_questions: number;
   correct_answers: number;
   status: string;
-  submitted_at: string;
+  started_at?: string;
+  submitted_at?: string;
   time_used_seconds: number;
 }
 
@@ -51,7 +52,7 @@ export default function AdminRound1ResultsPage() {
         <table className="w-full text-sm">
           <thead className="bg-slate-50 border-b border-slate-200">
             <tr>
-              {['Rank', 'Team', 'Score', 'Correct', '%', 'Time Used', 'Status', 'Submitted At'].map(h => (
+              {['Rank', 'Team', 'Score', 'Correct', '%', 'Started At', 'Submitted At', 'Time Used', 'Status'].map(h => (
                 <th key={h} className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wide whitespace-nowrap">{h}</th>
               ))}
             </tr>
@@ -59,10 +60,10 @@ export default function AdminRound1ResultsPage() {
           <tbody className="divide-y divide-slate-100">
             {loading ? (
               Array(5).fill(0).map((_, i) => (
-                <tr key={i}>{Array(8).fill(0).map((_, j) => <td key={j} className="px-4 py-3"><div className="skeleton h-4 rounded" /></td>)}</tr>
+                <tr key={i}>{Array(9).fill(0).map((_, j) => <td key={j} className="px-4 py-3"><div className="skeleton h-4 rounded" /></td>)}</tr>
               ))
             ) : results.map((r, i) => {
-              const pct = Math.round((r.correct_answers / r.total_questions) * 100);
+              const pct = Math.round((r.correct_answers / (r.total_questions || 30)) * 100);
               const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`;
               return (
                 <motion.tr
@@ -84,13 +85,18 @@ export default function AdminRound1ResultsPage() {
                       <span className="text-slate-600 text-xs">{pct}%</span>
                     </div>
                   </td>
+                  <td className="px-4 py-3 text-xs text-slate-600 font-mono">
+                    {r.started_at ? formatDateTime(r.started_at) : '—'}
+                  </td>
+                  <td className="px-4 py-3 text-xs text-slate-900 font-mono font-bold">
+                    {r.submitted_at ? formatDateTime(r.submitted_at) : '—'}
+                  </td>
                   <td className="px-4 py-3 text-slate-500 font-mono">{formatTime(r.time_used_seconds)}</td>
                   <td className="px-4 py-3">
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${r.status === 'auto_submitted' ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'}`}>
                       {r.status === 'auto_submitted' ? '⏰ Auto' : '✅ Manual'}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-xs text-slate-400">{r.submitted_at ? formatDateTime(r.submitted_at) : '—'}</td>
                 </motion.tr>
               );
             })}
