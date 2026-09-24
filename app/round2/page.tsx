@@ -13,6 +13,7 @@ import Header from '@/components/layout/Header';
 import { Round2Question, Round2TeamState, Round2Bid, Option, BidAmount } from '@/types';
 
 type BidStatus = 'idle' | 'placing' | 'placed' | 'resolved';
+type Round2Result = { result: string; score_change: number; coin_change: number; bid_amount: number } | null;
 
 export default function Round2Page() {
   const router = useRouter();
@@ -23,10 +24,12 @@ export default function Round2Page() {
   const [selectedBid, setSelectedBid] = useState<BidAmount>(4);
   const [bidStatus, setBidStatus] = useState<BidStatus>('idle');
   const [myBid, setMyBid] = useState<Round2Bid | null>(null);
+  const [myResult, setMyResult] = useState<Round2Result>(null);
   const [loading, setLoading] = useState(true);
   const [scorePop, setScorePop] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(38);
   const prevScore = useRef(0);
+  const prevQuestionId = useRef<string | null>(null);
   const supabaseRef = useRef<ReturnType<typeof createClient> | null>(null);
 
   const getSupabase = useCallback(() => {
@@ -92,6 +95,15 @@ export default function Round2Page() {
       .single();
 
     if (q) {
+      // Reset bid state when question changes
+      if (prevQuestionId.current && prevQuestionId.current !== q.id) {
+        setMyBid(null);
+        setMyResult(null);
+        setSelectedOption('A');
+        setSelectedBid(4);
+        setBidStatus('idle');
+      }
+      prevQuestionId.current = q.id;
       setCurrentQuestion(q);
 
       // Check existing bid for team
@@ -104,14 +116,27 @@ export default function Round2Page() {
 
       if (existingBid) {
         setMyBid(existingBid);
-        setSelectedOption(existingBid.selected_option);
+        setSelectedOption(existingBid.selected_option as Option);
         setSelectedBid(existingBid.bid_amount as BidAmount);
-        setBidStatus('placed');
+        setBidStatus(q.status === 'resolved' ? 'resolved' : 'placed');
       } else {
         setMyBid(null);
         setSelectedOption('A');
         setSelectedBid(4);
         setBidStatus('idle');
+      }
+
+      // Fetch result if question resolved
+      if (q.status === 'resolved') {
+        const { data: resultData } = await supabase
+          .from('round2_results')
+          .select('result, score_change, coin_change, bid_amount')
+          .eq('team_id', session.teamId)
+          .eq('question_id', q.id)
+          .maybeSingle();
+        setMyResult(resultData);
+      } else {
+        setMyResult(null);
       }
     }
 
@@ -153,6 +178,11 @@ export default function Round2Page() {
       return;
     }
 
+    if (currentQuestion.status === 'resolved') {
+      toast.error('This question has already been resolved!');
+      return;
+    }
+
     const opt = selectedOption || 'A';
     const bid = selectedBid || 4;
 
@@ -168,12 +198,13 @@ export default function Round2Page() {
 
     if (error || !data?.[0]?.success) {
       toast.error(data?.[0]?.message || 'Failed to place bid. Please try again.');
-      setBidStatus('idle');
+      setBidStatus(myBid ? 'placed' : 'idle');
       return;
     }
 
+    const isUpdate = !!myBid;
     setBidStatus('placed');
-    toast.success(`🎉 BID LOCKED IN! ${bid} 🪙 wagered on Option ${opt}.`);
+    toast.success(isUpdate ? `BID UPDATED: ${bid} coins on Option ${opt}` : `BID LOCKED: ${bid} coins on Option ${opt}`);
     loadState();
   };
 
@@ -495,21 +526,29 @@ export default function Round2Page() {
 
                     {/* Big Tactile CTA Lock Button */}
                     <button
-                      className={`w-full py-space-md px-space-lg rounded-xl font-headline-sm text-headline-sm font-black tracking-wide transition-all flex items-center justify-center gap-space-sm shadow-xl group border-2 border-ink-primary cursor-pointer ${
-                        bidStatus === 'placed'
-                          ? 'bg-round-2-orange hover:bg-round-2-orange/90 text-on-primary'
-                          : 'bg-round-2-orange hover:bg-round-2-orange/90 active:scale-[0.98] text-on-primary'
+                      className={`w-full py-space-md px-space-lg rounded-xl font-headline-sm text-headline-sm font-black tracking-wide transition-all flex items-center justify-center gap-space-sm shadow-xl group border-2 border-ink-primary ${
+                        currentQuestion?.status === 'resolved'
+                          ? 'bg-ink-secondary text-on-primary opacity-60 cursor-not-allowed'
+                          : bidStatus === 'placing'
+                          ? 'bg-round-2-orange/70 text-on-primary cursor-wait'
+                          : 'bg-round-2-orange hover:bg-round-2-orange/90 active:scale-[0.98] text-on-primary cursor-pointer'
                       }`}
                       id="lock-bid-cta"
                       onClick={handlePlaceBid}
                       type="button"
-                      disabled={bidStatus === 'placing'}
+                      disabled={bidStatus === 'placing' || currentQuestion?.status === 'resolved'}
                     >
                       <span className="material-symbols-outlined text-[26px] group-hover:-rotate-45 transition-transform">
-                        {bidStatus === 'placed' ? 'task_alt' : 'gavel'}
+                        {currentQuestion?.status === 'resolved' ? 'lock' : bidStatus === 'placed' ? 'task_alt' : 'gavel'}
                       </span>
                       <span id="cta-label">
-                        {bidStatus === 'placed' ? `UPDATE MY BID (${selectedBid} 🪙)` : `LOCK MY BID (${selectedBid} 🪙)`}
+                        {currentQuestion?.status === 'resolved'
+                          ? 'AUCTION CLOSED'
+                          : bidStatus === 'placing'
+                          ? 'LOCKING BID...'
+                          : bidStatus === 'placed'
+                          ? `UPDATE MY BID (${selectedBid} coins)`
+                          : `LOCK MY BID (${selectedBid} coins)`}
                       </span>
                     </button>
 
