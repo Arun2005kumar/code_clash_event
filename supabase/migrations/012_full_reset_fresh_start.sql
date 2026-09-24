@@ -1,6 +1,7 @@
 -- ============================================================
--- CODING CLUB CHALLENGE — Migration: 010_reset_all_rounds_function.sql
--- RPC Function to reset Round 1, Round 2, Round 3 stats and user accounts to start afresh
+-- CODING CLUB CHALLENGE — Migration: 012_full_reset_fresh_start.sql
+-- RPC Function & Script to wipe all user accounts, stats, and round attempts
+-- while PRESERVING all questions and missions.
 -- ============================================================
 
 CREATE OR REPLACE FUNCTION reset_all_rounds()
@@ -63,3 +64,5 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+-- Execute the reset immediately for this migration
+SELECT reset_all_rounds();

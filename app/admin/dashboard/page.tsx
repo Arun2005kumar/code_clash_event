@@ -126,6 +126,23 @@ export default function AdminDashboardPage() {
     setSettingsLoading(false);
   };
 
+  const fullReset = async () => {
+    if (!window.confirm('🔥 DANGER: Reset everything?\n\nThis will wipe all team accounts, login stats, scores, and round attempts to start a fresh test!\n\nAll 30 R1 questions, 6 R2 questions, and 5 R3 missions will be preserved intact.')) {
+      return;
+    }
+    setSettingsLoading(true);
+    const supabase = createClient();
+    const { data, error } = await supabase.rpc('reset_all_rounds');
+    if (error) {
+      toast.error('Reset failed: ' + error.message);
+    } else {
+      if (typeof window !== 'undefined') localStorage.clear();
+      toast.success(data?.message ?? '🔥 Platform reset completely! All user accounts wiped. Ready for fresh test.');
+      loadData();
+    }
+    setSettingsLoading(false);
+  };
+
   const STAT_CARDS = stats ? [
     { label: 'Registered Teams', value: stats.totalTeams, icon: '👥', color: 'text-round-1-blue', bg: 'bg-round-1-blue/10' },
     { label: 'Logged In Teams', value: stats.loggedInTeams, icon: '✅', color: 'text-status-correct', bg: 'bg-status-correct/10' },
@@ -298,6 +315,23 @@ export default function AdminDashboardPage() {
                 <span>INIT R3 HEIST</span>
               </button>
             </div>
+          </div>
+
+          {/* Danger Zone: Full Platform Reset */}
+          <div className="pt-space-md border-t-2 border-status-wrong/30 flex flex-col sm:flex-row sm:items-center justify-between gap-space-md bg-status-wrong/5 p-space-md rounded-xl border border-status-wrong/20">
+            <div>
+              <span className="font-label-sticker text-label-sticker text-status-wrong uppercase font-black block">DANGER ZONE // RESET PLATFORM</span>
+              <h3 className="font-headline-sm text-headline-sm font-bold text-ink-primary">Fresh Test Start (Wipe Accounts &amp; Stats)</h3>
+              <p className="font-body-sm text-body-sm text-ink-secondary">Deletes all team accounts, logins, attempts, and scores. Preserves all questions and missions.</p>
+            </div>
+            <button
+              onClick={fullReset}
+              disabled={settingsLoading}
+              className="px-space-md py-space-sm bg-status-wrong hover:bg-status-wrong/90 text-white font-headline-sm text-body-md font-black rounded-xl border-2 border-ink-primary shadow-[2px_2px_0px_#0F172A] disabled:opacity-60 transition-all cursor-pointer whitespace-nowrap flex items-center gap-space-xs shrink-0"
+            >
+              <span className="material-symbols-outlined text-[18px]">restart_alt</span>
+              <span>RESET EVERYTHING (FRESH START) 🔥</span>
+            </button>
           </div>
         </div>
       )}
