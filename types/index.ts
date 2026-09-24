@@ -67,6 +67,7 @@ export interface Round2Question {
   option_b: string;
   option_c: string;
   option_d: string;
+  correct_option?: 'A' | 'B' | 'C' | 'D';
   status: Round2QuestionStatus;
   created_at: string;
   updated_at: string;
