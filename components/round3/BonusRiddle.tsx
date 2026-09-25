@@ -128,7 +128,7 @@ export default function BonusRiddle({ teamId }: BonusRiddleProps) {
               type="text"
               value={answer}
               onChange={e => setAnswer(e.target.value)}
-              placeholder="e.g. 312211"
+              placeholder="Enter the next line..."
               className="flex-1 px-space-md py-space-sm bg-surface-container rounded-lg font-label-code text-headline-sm text-ink-primary tracking-wider focus:outline-none focus:bg-surface-card border-2 border-ink-primary shadow-inner"
             />
             <button

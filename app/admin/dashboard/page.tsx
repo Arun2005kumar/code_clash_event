@@ -1,8 +1,8 @@
 'use client';
 
-// app/admin/dashboard/page.tsx — Stitch Design Admin Master Dashboard & Controls
+// app/admin/dashboard/page.tsx — Admin Master Dashboard & Controls
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 import { CompetitionSettings, ViolationCount } from '@/types';
@@ -14,6 +14,7 @@ interface Stats {
   currentQuestion: number;
   flaggedTeams: number;
   loggedInTeams: number;
+  vaultUnlocked: number;
 }
 
 export default function AdminDashboardPage() {
@@ -21,8 +22,9 @@ export default function AdminDashboardPage() {
   const [settings, setSettings] = useState<CompetitionSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [settingsLoading, setSettingsLoading] = useState(false);
+  const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     const supabase = createClient();
     const [
       { count: teams },
@@ -31,6 +33,7 @@ export default function AdminDashboardPage() {
       { data: settingsData },
       { data: violations },
       { count: loggedIn },
+      { count: vaultDone },
     ] = await Promise.all([
       supabase.from('teams').select('*', { count: 'exact', head: true }),
       supabase.from('round1_attempts').select('*', { count: 'exact', head: true }).in('status', ['submitted', 'auto_submitted']),
@@ -38,18 +41,19 @@ export default function AdminDashboardPage() {
       supabase.from('competition_settings').select('*').limit(1).maybeSingle(),
       supabase.rpc('get_violation_counts'),
       supabase.from('teams').select('*', { count: 'exact', head: true }).eq('login_status', true),
+      supabase.from('round3_team_state').select('*', { count: 'exact', head: true }).eq('vault_unlocked', true),
     ]);
 
     const flaggedCount = (violations as ViolationCount[])?.filter(v => v.is_flagged).length ?? 0;
 
-    let currentSettings = settingsData;
+    let currentSettings = settingsData as CompetitionSettings | null;
     if (!currentSettings) {
       const { data: newSettings } = await supabase
         .from('competition_settings')
-        .insert([{ round1_active: true, round2_active: false, current_round2_question: 1 }])
+        .insert([{ round1_active: true, round2_active: false, round3_active: false, current_round2_question: 1, show_round1_explanations: false, round3_results_published: false }])
         .select('*')
         .single();
-      currentSettings = newSettings;
+      currentSettings = newSettings as CompetitionSettings;
     }
 
     setStats({
@@ -59,20 +63,23 @@ export default function AdminDashboardPage() {
       currentQuestion: currentSettings?.current_round2_question ?? 1,
       flaggedTeams: flaggedCount,
       loggedInTeams: loggedIn ?? 0,
+      vaultUnlocked: vaultDone ?? 0,
     });
     setSettings(currentSettings);
+    setLastRefreshed(new Date());
     setLoading(false);
-  };
+  }, []);
 
   useEffect(() => {
     loadData();
 
     const supabase = createClient();
     const channel = supabase
-      .channel('public:admin:dashboard')
+      .channel('public:admin:dashboard:v2')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'teams' }, () => loadData())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'round1_attempts' }, () => loadData())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'round2_team_state' }, () => loadData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'round3_team_state' }, () => loadData())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'competition_settings' }, () => loadData())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'anti_cheat_violations' }, (payload) => {
         loadData();
@@ -88,10 +95,12 @@ export default function AdminDashboardPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [loadData]);
 
   const updateSetting = async (key: string, value: boolean | number) => {
     setSettingsLoading(true);
+    // Optimistic update
+    setSettings(prev => prev ? { ...prev, [key]: value } as CompetitionSettings : prev);
     const supabase = createClient();
     if (settings?.id) {
       const { error } = await supabase
@@ -99,9 +108,11 @@ export default function AdminDashboardPage() {
         .update({ [key]: value, updated_at: new Date().toISOString() })
         .eq('id', settings.id);
 
-      if (error) { toast.error('Failed to update setting: ' + error.message); }
-      else {
-        toast.success(`Toggle [${key}] updated to ${value ? 'ON' : 'OFF'}!`);
+      if (error) {
+        toast.error('Failed to update setting: ' + error.message);
+        loadData(); // Revert optimistic
+      } else {
+        toast.success(`[${key}] → ${value ? 'ON' : 'OFF'}`);
         loadData();
       }
     } else {
@@ -109,10 +120,7 @@ export default function AdminDashboardPage() {
         .from('competition_settings')
         .insert([{ [key]: value }]);
       if (error) { toast.error('Failed to update setting: ' + error.message); }
-      else {
-        toast.success(`Toggle [${key}] updated to ${value ? 'ON' : 'OFF'}!`);
-        loadData();
-      }
+      else { toast.success(`[${key}] → ${value ? 'ON' : 'OFF'}`); loadData(); }
     }
     setSettingsLoading(false);
   };
@@ -154,10 +162,10 @@ export default function AdminDashboardPage() {
 
   const STAT_CARDS = stats ? [
     { label: 'Registered Teams', value: stats.totalTeams, icon: '👥', color: 'text-round-1-blue', bg: 'bg-round-1-blue/10' },
-    { label: 'Logged In Teams', value: stats.loggedInTeams, icon: '✅', color: 'text-status-correct', bg: 'bg-status-correct/10' },
+    { label: 'Logged In', value: stats.loggedInTeams, icon: '✅', color: 'text-status-correct', bg: 'bg-status-correct/10' },
     { label: 'R1 Completed', value: stats.round1Completed, icon: '📝', color: 'text-round-3-purple', bg: 'bg-round-3-purple/10' },
     { label: 'R2 Active', value: stats.round2Active, icon: '🎯', color: 'text-round-2-orange', bg: 'bg-round-2-orange/10' },
-    { label: 'Current Question', value: `Q${stats.currentQuestion}`, icon: '❓', color: 'text-currency-gold', bg: 'bg-currency-gold/10' },
+    { label: 'Vault Cracked', value: stats.vaultUnlocked, icon: '🔓', color: 'text-currency-gold', bg: 'bg-currency-gold/10' },
     { label: 'Flagged Teams', value: stats.flaggedTeams, icon: '⚠️', color: 'text-status-wrong', bg: 'bg-status-wrong/10' },
   ] : [];
 
@@ -167,19 +175,21 @@ export default function AdminDashboardPage() {
       {/* Header Banner */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-space-md bg-surface-card p-space-lg rounded-xl border-2 border-ink-primary shadow-[4px_4px_0px_#0F172A]">
         <div>
-          <span className="font-label-sticker text-label-sticker text-round-1-blue uppercase tracking-widest block mb-1">STITCH ARENA SYSTEM</span>
+          <span className="font-label-sticker text-label-sticker text-round-1-blue uppercase tracking-widest block mb-1">CODECLASH ARENA SYSTEM</span>
           <h1 className="font-headline-lg text-headline-lg font-black tracking-tight text-ink-primary">
             STAGE MASTER CONTROLS 🎛️
           </h1>
           <p className="font-body-md text-body-md text-ink-secondary">
             Manage live round states, answer visibility, and round initialization.
+            <span className="font-label-code text-[11px] text-ink-secondary/60 ml-2">Last: {lastRefreshed.toLocaleTimeString()}</span>
           </p>
         </div>
         <button
           onClick={loadData}
-          className="px-space-md py-space-sm bg-surface-muted hover:bg-surface-card text-ink-primary rounded-lg font-label-ticker text-label-ticker border-2 border-ink-primary shadow-[2px_2px_0px_#0F172A] flex items-center gap-space-xs cursor-pointer transition-all"
+          disabled={loading}
+          className="px-space-md py-space-sm bg-surface-muted hover:bg-surface-card text-ink-primary rounded-lg font-label-ticker text-label-ticker border-2 border-ink-primary shadow-[2px_2px_0px_#0F172A] flex items-center gap-space-xs cursor-pointer transition-all disabled:opacity-60"
         >
-          <span className="material-symbols-outlined text-[18px]">sync</span>
+          <span className={`material-symbols-outlined text-[18px] ${loading ? 'animate-spin' : ''}`}>sync</span>
           <span>REFRESH STATE</span>
         </button>
       </div>
@@ -282,9 +292,9 @@ export default function AdminDashboardPage() {
             <div className="flex items-center justify-between p-space-md bg-surface-muted rounded-xl border-2 border-ink-primary shadow-sm">
               <div className="flex flex-col">
                 <span className="font-headline-sm text-headline-sm font-extrabold text-ink-primary">Show R1 Answers</span>
-                <span className="font-body-sm text-body-sm text-ink-secondary">Reveal after round ends</span>
+                <span className="font-body-sm text-body-sm text-ink-secondary">Reveal explanations to teams</span>
                 <span className={`font-label-sticker text-[10px] font-bold uppercase mt-1 ${settings.show_round1_explanations ? 'text-round-1-blue' : 'text-ink-secondary'}`}>
-                  ● {settings.show_round1_explanations ? 'VISIBLE' : 'HIDDEN'}
+                  ● {settings.show_round1_explanations ? 'VISIBLE TO TEAMS' : 'HIDDEN'}
                 </span>
               </div>
               <button
@@ -297,6 +307,49 @@ export default function AdminDashboardPage() {
                 <span className={`absolute top-1 left-1 w-5 h-5 rounded-full bg-ink-primary transition-transform ${settings.show_round1_explanations ? 'translate-x-6 bg-white' : 'translate-x-0'}`} />
               </button>
             </div>
+          </div>
+
+          {/* Round 2 Question Selector */}
+          <div className="border-t-2 border-surface-muted pt-space-md flex flex-col sm:flex-row sm:items-center gap-space-md justify-between">
+            <div>
+              <span className="font-label-sticker text-label-sticker text-round-1-blue uppercase font-black block">ROUND 2 QUESTION SELECTOR</span>
+              <p className="font-body-sm text-body-sm text-ink-secondary">Currently active question: <strong>Q{settings.current_round2_question}</strong></p>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              {[1,2,3,4,5,6].map(n => (
+                <button
+                  key={n}
+                  onClick={() => updateSetting('current_round2_question', n)}
+                  disabled={settingsLoading}
+                  className={`w-10 h-10 rounded-lg font-label-code text-label-code font-black border-2 border-ink-primary transition-all cursor-pointer disabled:opacity-50 ${
+                    settings.current_round2_question === n
+                      ? 'bg-round-2-orange text-white shadow-[2px_2px_0px_#0F172A]'
+                      : 'bg-surface-muted text-ink-primary hover:bg-surface-card'
+                  }`}
+                >
+                  Q{n}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Publish Final Scoreboard */}
+          <div className="border-t-2 border-surface-muted pt-space-md flex items-center justify-between p-space-md bg-status-correct/5 rounded-xl border border-status-correct/20">
+            <div className="flex flex-col">
+              <span className="font-label-sticker text-label-sticker text-status-correct uppercase font-black block">FINAL SCOREBOARD VISIBILITY</span>
+              <span className="font-headline-sm text-headline-sm font-extrabold text-ink-primary">📢 Publish Scores to Teams</span>
+              <span className="font-body-sm text-body-sm text-ink-secondary">Enabling this makes the final leaderboard visible at /scoreboard for all teams</span>
+              <span className={`font-label-sticker text-[10px] font-bold uppercase mt-1 ${(settings as any).round3_results_published ? 'text-status-correct' : 'text-ink-secondary'}`}>
+                ● {(settings as any).round3_results_published ? '🌐 PUBLIC — All teams can see rankings' : 'PRIVATE — Hidden from teams'}
+              </span>
+            </div>
+            <button
+              onClick={() => updateSetting('round3_results_published', !(settings as any).round3_results_published)}
+              disabled={settingsLoading}
+              className={`relative w-14 h-8 rounded-full transition-colors cursor-pointer border-2 border-ink-primary shadow-inner shrink-0 ml-space-md ${(settings as any).round3_results_published ? 'bg-status-correct' : 'bg-surface-card'}`}
+            >
+              <span className={`absolute top-1 left-1 w-5 h-5 rounded-full bg-ink-primary transition-transform ${(settings as any).round3_results_published ? 'translate-x-6 bg-white' : 'translate-x-0'}`} />
+            </button>
           </div>
 
           {/* Initialize Actions */}

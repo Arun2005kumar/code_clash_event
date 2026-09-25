@@ -17,6 +17,8 @@ export async function logViolation({
   violationType,
   roundName,
 }: LogViolationParams) {
+  if (!teamId) return
+
   const key = `${teamId}-${violationType}`
   const now = Date.now()
 
@@ -27,12 +29,15 @@ export async function logViolation({
   lastViolationTime[key] = now
 
   try {
-    await supabase.from('anti_cheat_violations').insert({
+    const { error } = await supabase.from('anti_cheat_violations').insert({
       team_id: teamId,
       violation_type: violationType,
       round_name: roundName,
       created_at: new Date().toISOString(),
     })
+    if (error) {
+      console.error('Violation log error:', error.message)
+    }
   } catch (err) {
     // Never let logging failure disrupt the exam
     console.error('Violation log failed silently:', err)

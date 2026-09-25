@@ -137,23 +137,27 @@ export default function Header({ activePath }: HeaderProps) {
 
         {/* Navigation Bar */}
         <nav className="hidden lg:flex items-center gap-space-xs p-1 bg-surface-muted border-2 border-ink-primary rounded-xl">
-          <Link
-            href="/"
-            className={`px-space-md py-space-xs font-label-ticker text-label-ticker uppercase transition-all ${
-              isCurrent('/') && !pathname.includes('admin') && !pathname.includes('round')
-                ? 'bg-primary text-on-primary shadow-[2px_2px_0px_#0F172A] rounded-lg font-bold'
-                : 'text-on-surface-variant hover:text-ink-primary'
-            }`}
-          >
-            Arena
-          </Link>
+          {!session && (
+            <>
+              <Link
+                href="/"
+                className={`px-space-md py-space-xs font-label-ticker text-label-ticker uppercase transition-all ${
+                  isCurrent('/') && !pathname.includes('admin') && !pathname.includes('round') && !pathname.includes('scoreboard')
+                    ? 'bg-primary text-on-primary shadow-[2px_2px_0px_#0F172A] rounded-lg font-bold'
+                    : 'text-on-surface-variant hover:text-ink-primary'
+                }`}
+              >
+                Arena
+              </Link>
 
-          <Link
-            href="/#mission-rounds"
-            className="px-space-md py-space-xs font-label-ticker text-label-ticker uppercase text-on-surface-variant hover:text-ink-primary transition-all"
-          >
-            Rules
-          </Link>
+              <Link
+                href="/#mission-rounds"
+                className="px-space-md py-space-xs font-label-ticker text-label-ticker uppercase text-on-surface-variant hover:text-ink-primary transition-all"
+              >
+                Rules
+              </Link>
+            </>
+          )}
 
           <Link
             href={`/${activeRound}`}
@@ -167,15 +171,28 @@ export default function Header({ activePath }: HeaderProps) {
           </Link>
 
           <Link
-            href="/admin/dashboard"
+            href="/scoreboard"
             className={`px-space-md py-space-xs font-label-ticker text-label-ticker uppercase transition-all ${
-              pathname.startsWith('/admin')
+              pathname.startsWith('/scoreboard')
                 ? 'bg-primary text-on-primary shadow-[2px_2px_0px_#0F172A] rounded-lg font-bold'
                 : 'text-on-surface-variant hover:text-ink-primary'
             }`}
           >
-            Admin Room
+            Scoreboard
           </Link>
+
+          {!session && (
+            <Link
+              href="/admin/dashboard"
+              className={`px-space-md py-space-xs font-label-ticker text-label-ticker uppercase transition-all ${
+                pathname.startsWith('/admin')
+                  ? 'bg-primary text-on-primary shadow-[2px_2px_0px_#0F172A] rounded-lg font-bold'
+                  : 'text-on-surface-variant hover:text-ink-primary'
+              }`}
+            >
+              Admin Room
+            </Link>
+          )}
         </nav>
 
         {/* Right Team Pill & Dynamic Profile Popover */}
@@ -226,14 +243,24 @@ export default function Header({ activePath }: HeaderProps) {
 
               <div className="flex flex-col gap-space-xs pt-space-xs">
                 {session ? (
-                  <button
-                    type="button"
-                    onClick={handleSwitchTeam}
-                    className="w-full py-space-sm px-space-md bg-status-wrong/15 hover:bg-status-wrong/25 text-status-wrong rounded-lg font-label-ticker text-label-ticker font-extrabold flex items-center justify-center gap-space-xs border border-ink-primary shadow-sm transition-all cursor-pointer"
-                  >
-                    <span className="material-symbols-outlined text-[18px]">sync_alt</span>
-                    <span>LOGOUT / SWITCH TEAM</span>
-                  </button>
+                  <>
+                    <Link
+                      href="/scoreboard"
+                      onClick={() => setPopoverOpen(false)}
+                      className="w-full py-space-sm px-space-md bg-round-3-purple/15 hover:bg-round-3-purple/25 text-round-3-purple rounded-lg font-label-ticker text-label-ticker font-extrabold flex items-center justify-center gap-space-xs border border-ink-primary shadow-sm transition-all text-center"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">leaderboard</span>
+                      <span>VIEW SCOREBOARD</span>
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={handleSwitchTeam}
+                      className="w-full py-space-sm px-space-md bg-status-wrong/15 hover:bg-status-wrong/25 text-status-wrong rounded-lg font-label-ticker text-label-ticker font-extrabold flex items-center justify-center gap-space-xs border border-ink-primary shadow-sm transition-all cursor-pointer"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">sync_alt</span>
+                      <span>LOGOUT / SWITCH TEAM</span>
+                    </button>
+                  </>
                 ) : (
                   <Link
                     href="/"

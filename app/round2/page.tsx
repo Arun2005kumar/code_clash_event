@@ -186,15 +186,17 @@ export default function Round2Page() {
     }
 
     if (q) {
-      // Reset bid state when question changes
-      if (prevQuestionId.current && prevQuestionId.current !== q.id) {
+      // Reset bid state when question changes (detect by both id and question_number)
+      const newQuestionKey = `${q.question_number}-${q.id}`;
+      if (prevQuestionId.current && prevQuestionId.current !== newQuestionKey) {
         setMyBid(null);
         setMyResult(null);
         setSelectedOption('A');
         setSelectedBid(4);
         setBidStatus('idle');
+        toast.info(`📢 New lot opened: Question ${q.question_number}`);
       }
-      prevQuestionId.current = q.id;
+      prevQuestionId.current = newQuestionKey;
       setCurrentQuestion(q);
 
       // Check existing bid for team
@@ -279,8 +281,8 @@ export default function Round2Page() {
       return;
     }
 
-    if (currentQuestion.status === 'resolved') {
-      toast.error('This question has already been resolved!');
+    if (currentQuestion.status === 'resolved' || currentQuestion.status === 'locked' || currentQuestion.status === 'hammer_locked') {
+      toast.error('Bidding is locked for this lot!');
       return;
     }
 

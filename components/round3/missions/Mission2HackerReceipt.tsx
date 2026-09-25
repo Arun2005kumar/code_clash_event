@@ -85,12 +85,17 @@ export default function Mission2HackerReceipt({ teamId, mission, attempt, onSucc
       )}
 
       {/* Code Editor Container */}
-      <div className="p-space-md bg-ink-primary text-surface rounded-xl font-label-code text-body-sm shadow-inner border-2 border-ink-primary overflow-x-auto leading-relaxed">
-        <div className="flex items-center justify-between pb-2 mb-2 border-b border-surface/20 text-ink-secondary font-bold text-xs uppercase tracking-wider">
-          <span>PROGRAM_ANALYSIS.JAVA</span>
+      <div className="p-space-md bg-slate-900 text-slate-100 rounded-xl font-mono text-sm shadow-inner border-2 border-slate-900 overflow-x-auto leading-relaxed">
+        <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-700 text-slate-400 font-bold text-xs uppercase tracking-wider">
+          <span className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-red-500 inline-block" />
+            <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block" />
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block" />
+            <span className="ml-2 font-mono">PROGRAM_ANALYSIS.JAVA</span>
+          </span>
           <span>JAVA SE 17</span>
         </div>
-        <pre className="text-surface font-mono selection:bg-round-3-purple">
+        <pre className="text-emerald-400 font-mono text-base font-bold whitespace-pre p-3 bg-slate-950 rounded-lg border border-slate-800 selection:bg-purple-600 selection:text-white">
           <code>{JAVA_CODE_SNIPPET}</code>
         </pre>
       </div>

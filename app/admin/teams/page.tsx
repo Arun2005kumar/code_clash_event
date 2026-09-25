@@ -41,6 +41,7 @@ export default function AdminTeamsPage() {
 
     const rows: TeamRow[] = (teams ?? []).map((t: any) => {
       const v = violationMap.get(t.id) as any;
+      const submittedR1 = t.round1_attempts?.find((a: any) => a.status === 'submitted' || a.status === 'auto_submitted') || t.round1_attempts?.[0];
       return {
         id: t.id,
         team_name: t.team_name,
@@ -48,10 +49,10 @@ export default function AdminTeamsPage() {
         leader_reg_no: t.leader_reg_no,
         login_status: t.login_status,
         created_at: t.created_at,
-        r1_status: t.round1_attempts?.[0]?.status,
-        r1_score: t.round1_attempts?.[0]?.score,
-        r2_score: t.round2_team_state?.[0]?.score,
-        r2_coins: t.round2_team_state?.[0]?.coins,
+        r1_status: submittedR1?.status,
+        r1_score: submittedR1?.score ?? 0,
+        r2_score: t.round2_team_state?.[0]?.score ?? 0,
+        r2_coins: t.round2_team_state?.[0]?.coins ?? 100,
         total_violations: v?.total_violations ?? 0,
         is_flagged: v?.is_flagged ?? false,
       };
@@ -61,7 +62,19 @@ export default function AdminTeamsPage() {
     setLoading(false);
   };
 
-  useEffect(() => { loadTeams(); }, []);
+  useEffect(() => {
+    loadTeams();
+
+    const supabase = createClient();
+    const channel = supabase
+      .channel('admin-teams-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'teams' }, () => loadTeams())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'round1_attempts' }, () => loadTeams())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'round2_team_state' }, () => loadTeams())
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, []);
 
   const addTeam = async () => {
     if (!newTeam.team_name || !newTeam.leader_name || !newTeam.leader_reg_no) {

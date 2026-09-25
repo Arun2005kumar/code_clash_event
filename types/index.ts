@@ -83,6 +83,8 @@ export type Round2QuestionStatus =
   | 'live'
   | 'bidding_open'
   | 'bidding_closed'
+  | 'locked'
+  | 'hammer_locked'
   | 'resolved';
 
 export interface Round2TeamState {
@@ -133,6 +135,7 @@ export interface CompetitionSettings {
   round3_active: boolean;
   current_round2_question: number;
   show_round1_explanations: boolean;
+  round3_results_published: boolean;
   updated_at: string;
 }
 
@@ -313,7 +316,7 @@ export interface Round3HandoutContent {
   encoded?: string[];
   hint_text?: string;
   strips?: string[];
-  question: string;
+  question?: string;
   options?: string[];
   instruction?: string;
   final_hint?: string;

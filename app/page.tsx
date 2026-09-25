@@ -2,12 +2,12 @@
 
 // app/page.tsx — Stitch Design Homepage & Real-time Team Entry
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/layout/Header';
 import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
-import { setTeamSession } from '@/lib/auth/session';
+import { setTeamSession, getTeamSession } from '@/lib/auth/session';
 import BloomTransition from '@/components/animations/BloomTransition';
 
 export default function HomePage() {
@@ -18,6 +18,28 @@ export default function HomePage() {
   const [loading, setLoading] = useState(false);
   const [bloom, setBloom] = useState(false);
   const [feedbackMsg, setFeedbackMsg] = useState('');
+
+  // Redirect already-logged-in teams to the active round
+  useEffect(() => {
+    const existingSession = getTeamSession();
+    if (!existingSession) return;
+    const fetchRound = async () => {
+      try {
+        const supabase = createClient();
+        const { data: settings } = await supabase
+          .from('competition_settings')
+          .select('round1_active, round2_active, round3_active')
+          .limit(1)
+          .maybeSingle();
+        if ((settings as any)?.round3_active) router.replace('/round3');
+        else if ((settings as any)?.round2_active) router.replace('/round2');
+        else router.replace('/round1');
+      } catch {
+        router.replace('/round1');
+      }
+    };
+    fetchRound();
+  }, [router]);
 
   const handleEnterArena = async (event: React.FormEvent) => {
     event.preventDefault();

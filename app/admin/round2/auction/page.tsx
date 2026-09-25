@@ -111,7 +111,7 @@ export default function AdminAuctionPage() {
 
   const loadData = useCallback(async () => {
     const supabase = getSupabase();
-    const { data: s } = await supabase.from('competition_settings').select('*').single();
+    const { data: s } = await supabase.from('competition_settings').select('*').limit(1).maybeSingle();
     setSettings(s);
     
     const qNum = s?.current_round2_question || 1;
@@ -127,7 +127,7 @@ export default function AdminAuctionPage() {
     }
 
     setCurrentQuestion(q);
-    if (q?.status === 'resolved') {
+    if (q?.status === 'resolved' || q?.status === 'locked' || q?.status === 'hammer_locked') {
       setHammerDropped(true);
     } else {
       setHammerDropped(false);
@@ -160,12 +160,18 @@ export default function AdminAuctionPage() {
     return () => { supabase.removeChannel(channel); };
   }, [getSupabase, loadData]);
 
-  const dropHammer = (teamId: string) => {
+  const dropHammer = async (teamId: string) => {
     if (hammerDropped) { toast.error('Hammer already dropped.'); return; }
+    if (currentQuestion?.id) {
+      const supabase = getSupabase();
+      await supabase.rpc('lock_hammer_for_question', { p_question_id: currentQuestion.id });
+    }
     setPendingWinnerId(teamId);
     setAwaitingVerdict(true);
+    setHammerDropped(true);
     const winner = bids.find(b => b.team_id === teamId);
-    toast.info(`Winner selected: ${winner?.team_name}. Now choose CORRECT or WRONG.`);
+    toast.info(`Winner selected: ${winner?.team_name}. Bidding is now LOCKED for all teams. Choose CORRECT or WRONG.`);
+    loadData();
   };
 
   const submitVerdict = async (isCorrect: boolean) => {
