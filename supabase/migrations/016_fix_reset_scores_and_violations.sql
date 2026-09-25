@@ -56,19 +56,19 @@ BEGIN
     EXECUTE 'DELETE FROM team_scores WHERE TRUE';
   END IF;
 
-  -- Count and wipe all user accounts / teams
-  SELECT COUNT(*) INTO v_deleted_teams FROM teams WHERE TRUE;
-  DELETE FROM teams WHERE TRUE;
-
-  -- Preserve questions & missions, reset active/waiting flags
-  UPDATE round1_questions SET is_active = TRUE WHERE TRUE;
-
+  -- Reset round2_questions resolved_team_id FIRST to avoid FK constraint errors
   UPDATE round2_questions 
   SET status = 'waiting', 
       resolved_team_id = NULL, 
       updated_at = NOW()
   WHERE TRUE;
 
+  -- Count and wipe all user accounts / teams
+  SELECT COUNT(*) INTO v_deleted_teams FROM teams WHERE TRUE;
+  DELETE FROM teams WHERE TRUE;
+
+  -- Preserve questions & missions, reset active/waiting flags
+  UPDATE round1_questions SET is_active = TRUE WHERE TRUE;
   UPDATE round3_missions SET is_active = TRUE WHERE TRUE;
 
   -- Reset Competition Settings to clean start (Round 1 Active)

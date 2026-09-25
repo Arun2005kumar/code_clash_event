@@ -547,7 +547,10 @@ export default function Round1Page() {
               <span className="font-body-sm text-body-sm text-ink-secondary">College Coding Club Platform</span>
             </div>
             <div className="inline-block px-space-sm py-1 bg-surface-card border-2 border-ink-primary rounded-full shadow-[2px_2px_0px_#0F172A] -rotate-2">
-              <span className="font-label-sticker text-label-sticker text-ink-primary uppercase">Built with ⚡ &amp; caffeine</span>
+              <span className="font-label-sticker text-label-sticker text-ink-primary uppercase inline-flex items-center gap-1.5 font-extrabold">
+                <img src="/logo.png" alt="Code Clash" className="w-4 h-4 object-contain inline-block" />
+                Built with Team Vectonix ⚡
+              </span>
             </div>
           </div>
         </footer>

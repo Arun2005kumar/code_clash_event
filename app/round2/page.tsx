@@ -15,6 +15,15 @@ import FormattedQuestion from '@/components/quiz/FormattedQuestion';
 
 type BidStatus = 'idle' | 'placing' | 'placed' | 'resolved';
 type Round2Result = { result: string; score_change: number; coin_change: number; bid_amount: number } | null;
+interface TeamLeaderboardRow {
+  rank: number;
+  team_id: string;
+  team_name: string;
+  r1_score: number;
+  r2_score: number;
+  coins: number;
+  total_score: number;
+}
 
 const ROUND2_FALLBACK_QUESTIONS: Record<number, any> = {
   1: {
@@ -101,6 +110,7 @@ export default function Round2Page() {
   const [bidStatus, setBidStatus] = useState<BidStatus>('idle');
   const [myBid, setMyBid] = useState<Round2Bid | null>(null);
   const [allBids, setAllBids] = useState<(Round2Bid & { team_name?: string })[]>([]);
+  const [teamLeaderboard, setTeamLeaderboard] = useState<TeamLeaderboardRow[]>([]);
   const [myResult, setMyResult] = useState<Round2Result>(null);
   const [loading, setLoading] = useState(true);
   const [scorePop, setScorePop] = useState(false);
@@ -247,6 +257,40 @@ export default function Round2Page() {
       }
     }
 
+    // Fetch live team scoreboard
+    const [{ data: teamsList }, { data: r1Attempts }, { data: r2States }] = await Promise.all([
+      supabase.from('teams').select('id, team_name'),
+      supabase.from('round1_attempts').select('team_id, score').in('status', ['submitted', 'auto_submitted']),
+      supabase.from('round2_team_state').select('team_id, score, coins'),
+    ]);
+
+    const r1Map = new Map<string, number>();
+    r1Attempts?.forEach((a: any) => {
+      const existing = r1Map.get(a.team_id) ?? 0;
+      if (a.score > existing) r1Map.set(a.team_id, a.score);
+    });
+
+    const r2Map = new Map<string, { score: number; coins: number }>();
+    r2States?.forEach((s: any) => r2Map.set(s.team_id, { score: s.score, coins: s.coins }));
+
+    const teamRows: TeamLeaderboardRow[] = (teamsList ?? []).map((t: any) => {
+      const r1Score = r1Map.get(t.id) ?? 0;
+      const r2Info = r2Map.get(t.id) || { score: 0, coins: 100 };
+      return {
+        rank: 0,
+        team_id: t.id,
+        team_name: t.team_name,
+        r1_score: r1Score,
+        r2_score: r2Info.score,
+        coins: r2Info.coins,
+        total_score: r1Score + r2Info.score,
+      };
+    });
+
+    teamRows.sort((a, b) => b.total_score - a.total_score || b.coins - a.coins);
+    teamRows.forEach((row, i) => { row.rank = i + 1; });
+    setTeamLeaderboard(teamRows);
+
     setLoading(false);
   }, [session, getSupabase]);
 
@@ -273,7 +317,8 @@ export default function Round2Page() {
   }, [session, loadState, getSupabase]);
 
 
-  // No timer — auction is open-ended until admin drops hammer
+  const isHammerLocked = currentQuestion?.status === 'locked' || currentQuestion?.status === 'hammer_locked';
+  const isAuctionClosed = currentQuestion?.status === 'resolved' || isHammerLocked;
 
   const handlePlaceBid = async (increment: number) => {
     if (!session || !currentQuestion) {
@@ -281,7 +326,7 @@ export default function Round2Page() {
       return;
     }
 
-    if (currentQuestion.status === 'resolved' || currentQuestion.status === 'locked' || currentQuestion.status === 'hammer_locked') {
+    if (isAuctionClosed) {
       toast.error('Bidding is locked for this lot!');
       return;
     }
@@ -538,16 +583,23 @@ export default function Round2Page() {
                     </div>
                     {allBids.length > 0 ? (
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-space-sm max-h-48 overflow-y-auto pr-1">
-                        {allBids.map((b, idx) => (
-                          <div key={b.id || idx} className={`p-space-xs px-space-sm rounded-lg flex items-center justify-between text-body-sm border ${b.team_id === session.teamId ? 'bg-round-2-orange/15 border-round-2-orange font-bold' : 'bg-surface-muted border-ink-primary'}`}>
-                            <div className="flex items-center gap-1.5 overflow-hidden">
-                              {idx === 0 && <span className="text-sm">👑</span>}
-                              <span className="font-bold text-ink-primary truncate">{b.team_name || 'Team'}</span>
-                              <span className="text-[11px] px-1 bg-surface-card rounded border border-ink-primary font-mono text-ink-secondary">Opt {b.selected_option}</span>
+                        {allBids.map((b, idx) => {
+                          const isMyTeam = b.team_id === session.teamId;
+                          return (
+                            <div key={b.id || idx} className={`p-space-xs px-space-sm rounded-lg flex items-center justify-between text-body-sm border ${isMyTeam ? 'bg-round-2-orange/15 border-round-2-orange font-bold' : 'bg-surface-muted border-ink-primary'}`}>
+                              <div className="flex items-center gap-1.5 overflow-hidden">
+                                {idx === 0 && <span className="text-sm">👑</span>}
+                                <span className="font-bold text-ink-primary truncate">{b.team_name || 'Team'}</span>
+                                {isMyTeam ? (
+                                  <span className="text-[11px] px-1.5 py-0.5 bg-round-2-orange text-white rounded border border-ink-primary font-mono font-bold">Opt {b.selected_option}</span>
+                                ) : (
+                                  <span className="text-[11px] px-1.5 py-0.5 bg-surface-card text-ink-secondary rounded border border-ink-primary font-mono font-bold">🔒 Hidden</span>
+                                )}
+                              </div>
+                              <span className="text-round-2-orange font-label-sticker text-label-sticker font-bold whitespace-nowrap">{b.bid_amount} 🪙</span>
                             </div>
-                            <span className="text-round-2-orange font-label-sticker text-label-sticker font-bold whitespace-nowrap">{b.bid_amount} 🪙</span>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     ) : (
                       <div className="p-space-sm text-center text-ink-secondary font-body-sm bg-surface-muted rounded-lg border border-ink-primary">
@@ -650,8 +702,8 @@ export default function Round2Page() {
                     {/* Big Tactile CTA Lock Button */}
                     <button
                       className={`w-full py-space-md px-space-lg rounded-xl font-headline-sm text-headline-sm font-black tracking-wide transition-all flex items-center justify-center gap-space-sm shadow-xl group border-2 border-ink-primary ${
-                        currentQuestion?.status === 'resolved'
-                          ? 'bg-ink-secondary text-on-primary opacity-60 cursor-not-allowed'
+                        isAuctionClosed
+                          ? 'bg-ink-secondary text-on-primary opacity-70 cursor-not-allowed'
                           : bidStatus === 'placing'
                           ? 'bg-round-2-orange/70 text-on-primary cursor-wait'
                           : 'bg-round-2-orange hover:bg-round-2-orange/90 active:scale-[0.98] text-on-primary cursor-pointer'
@@ -659,14 +711,14 @@ export default function Round2Page() {
                       id="lock-bid-cta"
                       onClick={() => handlePlaceBid(selectedBid)}
                       type="button"
-                      disabled={bidStatus === 'placing' || currentQuestion?.status === 'resolved'}
+                      disabled={bidStatus === 'placing' || isAuctionClosed}
                     >
                       <span className="material-symbols-outlined text-[26px] group-hover:-rotate-45 transition-transform">
-                        {currentQuestion?.status === 'resolved' ? 'lock' : bidStatus === 'placed' ? 'task_alt' : 'gavel'}
+                        {isAuctionClosed ? 'lock' : bidStatus === 'placed' ? 'task_alt' : 'gavel'}
                       </span>
                       <span id="cta-label">
-                        {currentQuestion?.status === 'resolved'
-                          ? 'AUCTION CLOSED'
+                        {isAuctionClosed
+                          ? (isHammerLocked ? '🔨 HAMMER LOCKED — BIDDING CLOSED' : 'AUCTION CLOSED')
                           : bidStatus === 'placing'
                           ? 'LOCKING BID...'
                           : bidStatus === 'placed'
@@ -686,16 +738,31 @@ export default function Round2Page() {
                   <div className="bg-surface-card rounded-xl p-space-md lg:p-space-lg shadow-xl relative overflow-hidden transition-all duration-300 border-2 border-ink-primary" id="hammer-state-card">
                     <div className="flex items-center justify-between border-b pb-space-sm border-surface-muted mb-space-md">
                       <div className="flex items-center gap-space-xs">
-                        <span className={`w-2.5 h-2.5 rounded-full ${currentQuestion?.status === 'resolved' ? 'bg-status-correct' : 'bg-round-2-orange animate-ping'}`}></span>
+                        <span className={`w-2.5 h-2.5 rounded-full ${currentQuestion?.status === 'resolved' ? 'bg-status-correct' : isHammerLocked ? 'bg-round-2-orange animate-bounce' : 'bg-round-2-orange animate-ping'}`}></span>
                         <span className="font-label-ticker text-label-ticker text-round-2-orange uppercase font-extrabold tracking-wider">AUCTIONEER CONSOLE</span>
                       </div>
                       <span className="font-label-sticker text-label-sticker text-ink-secondary">
-                        {currentQuestion?.status === 'resolved' ? 'LOT_RESOLVED' : 'STAGE_SYNC_ACTIVE'}
+                        {currentQuestion?.status === 'resolved' ? 'LOT_RESOLVED' : isHammerLocked ? 'HAMMER_LOCKED' : 'STAGE_SYNC_ACTIVE'}
                       </span>
                     </div>
 
                     {/* Dynamic Hammer Climax Banner vs Bidding Open */}
-                    {currentQuestion?.status === 'resolved' ? (
+                    {isHammerLocked ? (
+                      <div className="flex flex-col gap-space-md">
+                        <div className="p-space-md rounded-xl bg-round-2-orange/15 border-2 border-round-2-orange flex flex-col gap-2">
+                          <div className="flex items-center gap-2 text-round-2-orange font-black text-headline-sm">
+                            <span className="material-symbols-outlined text-[28px] animate-bounce">gavel</span>
+                            🔨 HAMMER HAS BEEN LOCKED!
+                          </div>
+                          <p className="font-body-md text-ink-primary font-bold">
+                            Bidding is now strictly locked for all teams. The admin is evaluating the top bids and declaring the verdict.
+                          </p>
+                          <p className="font-body-sm text-ink-secondary">
+                            Sit tight! Results for this lot will be announced shortly.
+                          </p>
+                        </div>
+                      </div>
+                    ) : currentQuestion?.status === 'resolved' ? (
                       <div className="flex flex-col gap-space-md">
                         {myResult?.result === 'won_correct' ? (
                           <div className="p-space-md rounded-xl bg-status-correct/15 border-2 border-status-correct flex flex-col gap-2">
@@ -789,6 +856,65 @@ export default function Round2Page() {
                 </section>
               </div>
 
+              {/* LIVE TEAM SCOREBOARD SECTION */}
+              <section className="w-full bg-surface-card rounded-xl p-space-md lg:p-space-lg shadow-xl border-2 border-ink-primary flex flex-col gap-space-md mt-space-lg">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-space-sm">
+                    <span className="material-symbols-outlined text-round-2-orange text-[28px]">leaderboard</span>
+                    <div>
+                      <h3 className="font-headline-sm text-headline-sm text-ink-primary font-black">ROUND 2 LIVE TEAMS &amp; SCOREBOARD</h3>
+                      <p className="font-body-sm text-body-sm text-ink-secondary">Real-time standings across all registered teams</p>
+                    </div>
+                  </div>
+                  <span className="font-label-sticker text-label-sticker px-space-sm py-1 bg-surface-muted border border-ink-primary rounded-full font-bold">
+                    LIVE UPDATES
+                  </span>
+                </div>
+
+                <div className="overflow-x-auto w-full rounded-lg border-2 border-ink-primary">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-surface-muted text-ink-secondary font-label-ticker text-label-ticker uppercase border-b-2 border-ink-primary">
+                        <th className="py-space-sm px-space-md">Rank</th>
+                        <th className="py-space-sm px-space-md">Team</th>
+                        <th className="py-space-sm px-space-md">R1 Score</th>
+                        <th className="py-space-sm px-space-md">R2 Score</th>
+                        <th className="py-space-sm px-space-md">Purse (Coins)</th>
+                        <th className="py-space-sm px-space-md text-right">Total Score</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-surface-muted font-body-md text-body-md text-ink-primary">
+                      {teamLeaderboard.map((row) => {
+                        const isMyTeam = row.team_id === session.teamId;
+                        return (
+                          <tr key={row.team_id} className={`transition-colors ${isMyTeam ? 'bg-round-2-orange/15 font-bold' : 'hover:bg-surface-muted/50'}`}>
+                            <td className="py-space-md px-space-md font-label-ticker">
+                              <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-body-sm border border-ink-primary ${row.rank === 1 ? 'bg-currency-gold text-ink-primary font-black' : 'bg-surface-card'}`}>
+                                {row.rank === 1 ? '🥇' : row.rank === 2 ? '🥈' : row.rank === 3 ? '🥉' : `#${row.rank}`}
+                              </span>
+                            </td>
+                            <td className="py-space-md px-space-md font-bold text-ink-primary">
+                              {row.team_name} {isMyTeam && <span className="ml-2 text-xs bg-round-2-orange text-white px-1.5 py-0.5 rounded border border-ink-primary font-mono">YOU</span>}
+                            </td>
+                            <td className="py-space-md px-space-md font-label-code text-round-1-blue font-bold">{row.r1_score} pts</td>
+                            <td className="py-space-md px-space-md font-label-code text-round-2-orange font-bold">{row.r2_score} pts</td>
+                            <td className="py-space-md px-space-md font-label-code text-ink-primary font-bold">{row.coins} 🪙</td>
+                            <td className="py-space-md px-space-md font-headline-sm text-headline-sm text-right font-black text-ink-primary">
+                              {row.total_score} pts
+                            </td>
+                          </tr>
+                        );
+                      })}
+                      {teamLeaderboard.length === 0 && (
+                        <tr>
+                          <td colSpan={6} className="text-center py-6 text-ink-secondary">No teams registered yet.</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+
             </div>
           </div>
         </main>
@@ -801,7 +927,10 @@ export default function Round2Page() {
               <span className="font-body-sm text-body-sm text-ink-secondary">College Coding Club Platform</span>
             </div>
             <div className="inline-block px-space-sm py-1 bg-surface-card border-2 border-ink-primary rounded-full shadow-[2px_2px_0px_#0F172A] -rotate-2">
-              <span className="font-label-sticker text-label-sticker text-ink-primary uppercase">Built with ⚡ &amp; caffeine</span>
+              <span className="font-label-sticker text-label-sticker text-ink-primary uppercase inline-flex items-center gap-1.5 font-extrabold">
+                <img src="/logo.png" alt="Code Clash" className="w-4 h-4 object-contain inline-block" />
+                Built with Team Vectonix ⚡
+              </span>
             </div>
           </div>
         </footer>

@@ -102,25 +102,34 @@ export default function AdminDashboardPage() {
     // Optimistic update
     setSettings(prev => prev ? { ...prev, [key]: value } as CompetitionSettings : prev);
     const supabase = createClient();
+
     if (settings?.id) {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('competition_settings')
         .update({ [key]: value, updated_at: new Date().toISOString() })
-        .eq('id', settings.id);
+        .eq('id', settings.id)
+        .select('*');
 
       if (error) {
         toast.error('Failed to update setting: ' + error.message);
         loadData(); // Revert optimistic
-      } else {
+      } else if (data && data.length > 0) {
+        setSettings(data[0] as CompetitionSettings);
         toast.success(`[${key}] → ${value ? 'ON' : 'OFF'}`);
-        loadData();
       }
     } else {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('competition_settings')
-        .insert([{ [key]: value }]);
-      if (error) { toast.error('Failed to update setting: ' + error.message); }
-      else { toast.success(`[${key}] → ${value ? 'ON' : 'OFF'}`); loadData(); }
+        .insert([{ [key]: value }])
+        .select('*');
+
+      if (error) {
+        toast.error('Failed to update setting: ' + error.message);
+        loadData();
+      } else if (data && data.length > 0) {
+        setSettings(data[0] as CompetitionSettings);
+        toast.success(`[${key}] → ${value ? 'ON' : 'OFF'}`);
+      }
     }
     setSettingsLoading(false);
   };

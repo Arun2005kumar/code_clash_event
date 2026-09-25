@@ -6,6 +6,8 @@ import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 import { Round2Bid, Round2QuestionAdmin, CompetitionSettings } from '@/types';
 
+import FormattedQuestion from '@/components/quiz/FormattedQuestion';
+
 const ROUND2_FALLBACK_QUESTIONS: Record<number, any> = {
   1: {
     id: '00000002-0000-0000-0000-000000000001',
@@ -127,14 +129,8 @@ export default function AdminAuctionPage() {
     }
 
     setCurrentQuestion(q);
-    if (q?.status === 'resolved' || q?.status === 'locked' || q?.status === 'hammer_locked') {
-      setHammerDropped(true);
-    } else {
-      setHammerDropped(false);
-      setAwaitingVerdict(false);
-      setPendingWinnerId(null);
-    }
 
+    let mapped: (Round2Bid & { team_name?: string })[] = [];
     if (q) {
       const { data: bidData } = await supabase
         .from('round2_bids')
@@ -142,9 +138,23 @@ export default function AdminAuctionPage() {
         .eq('question_id', q.id)
         .order('bid_amount', { ascending: false })
         .order('bid_timestamp', { ascending: true });
-      const mapped = (bidData ?? []).map((b: any) => ({ ...b, team_name: b.teams?.team_name }));
+      mapped = (bidData ?? []).map((b: any) => ({ ...b, team_name: b.teams?.team_name }));
       setBids(mapped);
     }
+
+    if (q?.status === 'resolved') {
+      setHammerDropped(true);
+      setAwaitingVerdict(false);
+    } else if (q?.status === 'locked' || q?.status === 'hammer_locked') {
+      setHammerDropped(true);
+      setAwaitingVerdict(true);
+      setPendingWinnerId(prev => prev || mapped[0]?.team_id || null);
+    } else {
+      setHammerDropped(false);
+      setAwaitingVerdict(false);
+      setPendingWinnerId(null);
+    }
+
     setLoading(false);
   }, [getSupabase]);
 
@@ -310,9 +320,7 @@ export default function AdminAuctionPage() {
                 IF CORRECT: +{getScorePreview(highestBidder?.bid_amount || 0)} PTS
               </span>
             </div>
-            <h2 className="font-headline-sm text-headline-sm text-ink-primary mt-1">
-              {currentQuestion?.question_text || 'Waiting for question...'}
-            </h2>
+            <FormattedQuestion text={currentQuestion?.question_text || 'Waiting for question...'} compact />
             {correctOption && (
               <div className="p-space-sm bg-status-correct/10 rounded-lg border-2 border-status-correct flex items-center gap-2">
                 <span className="material-symbols-outlined text-status-correct text-[20px]">check_circle</span>

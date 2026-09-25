@@ -193,20 +193,23 @@ export default function HomePage() {
               
               {/* Cheerful Badge */}
               <div className="inline-flex items-center gap-space-xs px-space-md py-1.5 bg-currency-gold/20 text-on-secondary-container rounded-full shadow-sm mb-space-md transform hover:scale-105 transition-transform duration-200">
-                <span className="material-symbols-outlined text-currency-gold text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>bolt</span>
-                <span className="font-label-ticker text-label-ticker uppercase tracking-wider text-ink-primary font-extrabold">CODING CLUB PRESENTS</span>
+                <img src="/logo.png" alt="Code Clash Logo" className="w-6 h-6 object-contain" />
+                <span className="font-label-ticker text-label-ticker uppercase tracking-wider text-ink-primary font-extrabold">CODE CLASH PRESENTS</span>
               </div>
 
               {/* Main Heading & Punchy Tagline */}
-              <h1 className="font-display-xl text-display-xl text-ink-primary tracking-tight mb-space-sm">
-                CODING CLUB{' '}
-                <span className="relative inline-block text-primary-container">
-                  CHALLENGE
-                  <svg className="absolute -bottom-2 left-0 w-full h-3 text-secondary-container" fill="none" preserveAspectRatio="none" viewBox="0 0 200 12" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M3 9C45 3 155 3 197 9" stroke="currentColor" strokeLinecap="round" strokeWidth="6"></path>
-                  </svg>
-                </span>
-              </h1>
+              <div className="flex flex-col items-center justify-center gap-2 mb-space-sm">
+                <img src="/logo.png" alt="Code Clash Official Logo" className="w-32 h-32 sm:w-44 sm:h-44 object-contain drop-shadow-[4px_4px_0px_#0F172A] hover:scale-105 transition-transform" />
+                <h1 className="font-display-xl text-display-xl text-ink-primary tracking-tight">
+                  CODE{' '}
+                  <span className="relative inline-block text-primary-container">
+                    CLASH
+                    <svg className="absolute -bottom-2 left-0 w-full h-3 text-secondary-container" fill="none" preserveAspectRatio="none" viewBox="0 0 200 12" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M3 9C45 3 155 3 197 9" stroke="currentColor" strokeLinecap="round" strokeWidth="6"></path>
+                    </svg>
+                  </span>
+                </h1>
+              </div>
               <p className="font-headline-md text-headline-md text-ink-secondary mt-space-xs max-w-2xl">
                 Three rounds. One team. Zero excuses.
               </p>
@@ -545,7 +548,10 @@ export default function HomePage() {
             <span className="font-body-sm text-body-sm text-ink-secondary">College Coding Club Platform</span>
           </div>
           <div className="inline-block px-space-sm py-1 bg-surface-card border-2 border-ink-primary rounded-full shadow-[2px_2px_0px_#0F172A] -rotate-2">
-            <span className="font-label-sticker text-label-sticker text-ink-primary uppercase">Built with ⚡ &amp; caffeine</span>
+            <span className="font-label-sticker text-label-sticker text-ink-primary uppercase inline-flex items-center gap-1.5 font-extrabold">
+              <img src="/logo.png" alt="Code Clash" className="w-4 h-4 object-contain inline-block" />
+              Built with Team Vectonix ⚡
+            </span>
           </div>
         </div>
       </footer>

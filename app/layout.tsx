@@ -3,10 +3,13 @@ import './globals.css';
 import { Toaster } from 'sonner';
 
 export const metadata: Metadata = {
-  title: 'CODING CLUB CHAOS ⚡',
+  title: 'Code Clash ⚡',
   description:
-    'THINK FAST. BID SMARTER. Live competitive coding exam platform featuring MCQ Round 1 and Code Auction Round 2.',
-  keywords: ['coding club chaos', 'competitive exam', 'MCQ sprint', 'code auction', 'bidding', 'college hackathon'],
+    'THINK FAST. BID SMARTER. Live competitive coding platform featuring MCQ Sprint Round 1, Code Auction Round 2, and Tech Heist Round 3.',
+  keywords: ['code clash', 'coding club', 'competitive coding', 'MCQ sprint', 'code auction', 'bidding', 'tech heist'],
+  icons: {
+    icon: '/logo.png',
+  },
 };
 
 export default function RootLayout({
@@ -17,6 +20,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="bg-background">
       <head>
+        <link rel="icon" href="/logo.png" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link

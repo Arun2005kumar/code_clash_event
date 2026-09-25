@@ -119,11 +119,11 @@ export default function Header({ activePath }: HeaderProps) {
         {/* Brand Logo */}
         <div className="flex items-center gap-space-md">
           <Link href="/" className="flex items-center gap-space-sm group">
-            <div className="w-9 h-9 rounded-lg bg-round-1-blue text-on-primary font-headline-sm text-headline-sm flex items-center justify-center font-black shadow-[2px_2px_0px_#0F172A] group-hover:translate-x-[1px] group-hover:translate-y-[1px] transition-transform border border-ink-primary">
-              ⚡
+            <div className="w-10 h-10 rounded-xl bg-surface-card flex items-center justify-center p-1 shadow-[2px_2px_0px_#0F172A] group-hover:translate-x-[1px] group-hover:translate-y-[1px] transition-transform border-2 border-ink-primary overflow-hidden">
+              <img src="/logo.png" alt="Code Clash Logo" className="w-full h-full object-contain" />
             </div>
             <span className="font-headline-sm text-headline-sm text-ink-primary tracking-tight font-black hidden sm:inline-block">
-              CODE::ARENA
+              Code Clash
             </span>
           </Link>
 

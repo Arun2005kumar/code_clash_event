@@ -113,11 +113,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {/* FIXED TOP HEADER */}
         <header className="fixed top-0 left-64 right-0 h-20 bg-canvas-cream/95 backdrop-blur-md border-b-2 border-ink-primary z-40 px-space-md flex items-center justify-between">
           <div className="flex items-center gap-space-md">
-            <div className="w-8 h-8 rounded-lg bg-round-1-blue text-on-primary flex items-center justify-center font-headline-sm font-black border border-ink-primary">
-              CC
+            <div className="w-10 h-10 rounded-xl bg-surface-card flex items-center justify-center p-1 shadow-[2px_2px_0px_#0F172A] border-2 border-ink-primary overflow-hidden">
+              <img src="/logo.png" alt="Code Clash Logo" className="w-full h-full object-contain" />
             </div>
             <span className="font-headline-sm text-headline-sm text-ink-primary tracking-tight font-black">
-              MASTER CONTROL ROOM
+              CODE CLASH — MASTER CONTROL ROOM
             </span>
           </div>
           <div className="flex items-center gap-space-md">
