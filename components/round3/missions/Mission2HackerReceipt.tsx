@@ -24,27 +24,45 @@ const JAVA_CODE_SNIPPET = `static int test() {
             result = i;
             return result;
         } finally {
-            result = 100;
+            result = 100;  // does this affect what's printed?
         }
     }
 
     return -1;
+}
+
+public class Main {
+    public static void main(String[] args) {
+        System.out.println(test());
+    }
 }`;
 
+// Map MCQ letter → value submitted to Supabase (DB stores numeric strings)
+const OPTIONS: { label: string; display: string; value: string }[] = [
+  { label: 'A', display: '0',   value: '0'   },
+  { label: 'B', display: '100', value: '100' },
+  { label: 'C', display: '-1',  value: '-1'  },
+  { label: 'D', display: '2',   value: '2'   },
+];
+
 export default function Mission2HackerReceipt({ teamId, mission, attempt, onSuccess, isExpired = false }: MissionProps) {
-  const [answerInput, setAnswerInput] = useState(attempt?.submitted_answer ?? '');
-  const [loading, setLoading] = useState(false);
-  const [solved, setSolved] = useState(attempt?.is_correct ?? false);
+  const [selected, setSelected] = useState<string | null>(null);   // letter: 'A' | 'B' | 'C' | 'D'
+  const [loading, setLoading]   = useState(false);
+  const [solved, setSolved]     = useState(attempt?.is_correct ?? false);
   const [cluePiece, setCluePiece] = useState(attempt?.clue_piece_revealed ?? '');
   const [errorMsg, setErrorMsg] = useState('');
 
   const handleConfirmAnswer = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!answerInput.trim() || solved || isExpired || loading) return;
+    if (!selected || solved || isExpired || loading) return;
+
+    const option = OPTIONS.find(o => o.label === selected);
+    if (!option) return;
+
     setLoading(true);
     setErrorMsg('');
 
-    const res = await validateMissionAnswerServer(teamId, 2, answerInput.trim());
+    const res = await validateMissionAnswerServer(teamId, 2, option.value.trim());
     setLoading(false);
 
     if (res.is_correct) {
@@ -54,8 +72,8 @@ export default function Mission2HackerReceipt({ teamId, mission, attempt, onSucc
       onSuccess(piece);
       toast.success('RETURN TRAP DECODED! Key #2 recovered.');
     } else {
-      setErrorMsg("RETURN VALUE REJECTED: That's not the value returned by the method. Recheck the execution order and try again.");
-      toast.error('Return value rejected. Try again!');
+      setErrorMsg("RETURN VALUE REJECTED: That's not what the program prints. Recheck the execution order and try again.");
+      toast.error('Wrong answer. Try again!');
     }
   };
 
@@ -73,7 +91,7 @@ export default function Mission2HackerReceipt({ teamId, mission, attempt, onSucc
           THE RETURN TRAP
         </h1>
         <p className="font-body-md text-body-md text-ink-secondary font-medium mt-1">
-          ⚠️ SYSTEM ALERT: A piece of code has been intercepted from the system. The code contains a trap involving return and finally. Your task is to determine exactly what the program returns.
+          ⚠️ SYSTEM ALERT: A piece of code has been intercepted from the system. The code contains a trap involving <code className="bg-slate-800 text-emerald-400 px-1 rounded text-sm font-mono">return</code> and <code className="bg-slate-800 text-emerald-400 px-1 rounded text-sm font-mono">finally</code>. Determine exactly what the program <strong>prints</strong>.
         </p>
       </div>
 
@@ -115,7 +133,7 @@ export default function Mission2HackerReceipt({ teamId, mission, attempt, onSucc
           <div className="p-space-md bg-canvas-cream rounded-xl border-2 border-ink-primary flex flex-col gap-space-xs shadow-inner">
             <div className="flex items-center gap-space-sm">
               <span className="font-headline-sm text-headline-sm font-black text-ink-primary uppercase">
-                RETURN VALUE:
+                OUTPUT:
               </span>
               <span className="font-display-xl text-headline-lg text-status-correct font-black bg-surface-card px-space-md py-0.5 rounded border border-ink-primary shadow-xs">
                 0
@@ -143,28 +161,51 @@ export default function Mission2HackerReceipt({ teamId, mission, attempt, onSucc
           </div>
         </div>
       ) : (
-        <form onSubmit={handleConfirmAnswer} className="flex flex-col gap-space-sm mt-space-xs">
+        <form onSubmit={handleConfirmAnswer} className="flex flex-col gap-space-md mt-space-xs">
           <label className="font-headline-sm text-headline-sm text-ink-primary font-black uppercase">
-            What value does test() return?
+            What will this Java program print?
           </label>
 
-          <div className="flex flex-col sm:flex-row gap-space-sm">
-            <input
-              type="text"
-              value={answerInput}
-              onChange={e => setAnswerInput(e.target.value)}
-              placeholder="ENTER NUMERIC ANSWER"
-              disabled={isExpired || loading}
-              className="flex-1 px-space-md py-space-sm bg-surface-container rounded-lg font-label-code text-headline-sm text-ink-primary tracking-wider focus:outline-none focus:bg-surface-card border-2 border-ink-primary shadow-inner disabled:opacity-50"
-            />
-            <button
-              type="submit"
-              disabled={!answerInput.trim() || loading || isExpired}
-              className="px-space-xl py-space-sm bg-round-3-purple hover:bg-tertiary-container text-on-tertiary font-headline-sm text-headline-sm rounded-lg shadow-[2px_2px_0px_#0F172A] border-2 border-ink-primary disabled:opacity-50 transition-all cursor-pointer font-black shrink-0"
-            >
-              {loading ? 'CHECKING...' : 'CONFIRM ANSWER →'}
-            </button>
+          {/* Multiple Choice Options */}
+          <div className="grid grid-cols-2 gap-space-sm">
+            {OPTIONS.map(opt => (
+              <button
+                key={opt.label}
+                type="button"
+                disabled={isExpired || loading}
+                onClick={() => {
+                  if (!isExpired && !loading) {
+                    setSelected(opt.label);
+                    setErrorMsg('');
+                  }
+                }}
+                className={`
+                  flex items-center gap-space-sm px-space-md py-space-sm rounded-lg border-2 font-headline-sm text-headline-sm font-black transition-all cursor-pointer
+                  ${selected === opt.label
+                    ? 'bg-round-3-purple text-on-tertiary border-ink-primary shadow-[3px_3px_0px_#0F172A] scale-[0.98]'
+                    : 'bg-surface-container text-ink-primary border-ink-primary/40 hover:border-ink-primary hover:bg-surface-container-high hover:shadow-[2px_2px_0px_#0F172A]'
+                  }
+                  disabled:opacity-50 disabled:cursor-not-allowed
+                `}
+              >
+                <span className={`
+                  w-7 h-7 rounded-full border-2 flex items-center justify-center text-sm font-black shrink-0
+                  ${selected === opt.label ? 'border-on-tertiary bg-on-tertiary/20' : 'border-ink-primary/50'}
+                `}>
+                  {opt.label}
+                </span>
+                <span className="font-mono text-lg">{opt.display}</span>
+              </button>
+            ))}
           </div>
+
+          <button
+            type="submit"
+            disabled={!selected || loading || isExpired}
+            className="w-full py-space-sm px-space-md bg-round-3-purple hover:bg-tertiary-container text-on-tertiary font-headline-sm text-headline-sm rounded-lg shadow-[2px_2px_0px_#0F172A] border-2 border-ink-primary disabled:opacity-50 transition-all cursor-pointer font-black"
+          >
+            {loading ? 'CHECKING...' : `CONFIRM ANSWER ${selected ? `(${selected})` : ''} →`}
+          </button>
 
           {errorMsg && (
             <div className="p-space-md bg-status-wrong/10 text-status-wrong rounded-xl font-headline-sm text-headline-sm font-black border border-status-wrong/30">
