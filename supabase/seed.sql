@@ -20,18 +20,31 @@ TRUNCATE TABLE anti_cheat_violations CASCADE;
 TRUNCATE TABLE teams CASCADE;
 
 -- ============================================================
--- SAMPLE TEAMS
+-- 21 OFFICIAL EVENT TEAMS
 -- ============================================================
 INSERT INTO teams (team_name, leader_name, leader_reg_no) VALUES
-  ('ByteBlasters', 'Arjun Sharma', 'CS2021001'),
-  ('CodeCraft', 'Priya Nair', 'CS2021002'),
-  ('NullPointers', 'Rahul Verma', 'CS2021003'),
-  ('StackOverflow', 'Sneha Patel', 'CS2021004'),
-  ('AlgoAces', 'Karan Mehta', 'CS2021005'),
-  ('BinaryBrigade', 'Deepika Rao', 'CS2021006'),
-  ('RuntimeErrors', 'Vikram Singh', 'CS2021007'),
-  ('InfiniteLoop', 'Ananya Kumar', 'CS2021008')
-ON CONFLICT DO NOTHING;
+  ('PHOENIX', 'Team Leader', 'REG001'),
+  ('CODE CREW', 'Team Leader', 'REG002'),
+  ('SOCIAL GUARDIANS', 'Team Leader', 'REG003'),
+  ('OPTIMIZE PRIME', 'Team Leader', 'REG004'),
+  ('THINK & SINK', 'Team Leader', 'REG005'),
+  ('CODE BLOODED', 'Team Leader', 'REG006'),
+  ('QUAD MINDS', 'Team Leader', 'REG007'),
+  ('ALPHA READER''S', 'Team Leader', 'REG008'),
+  ('CODE BREAKER', 'Team Leader', 'REG009'),
+  ('LOGIC MAKERS', 'Team Leader', 'REG010'),
+  ('QUAD SQUAD', 'Team Leader', 'REG011'),
+  ('CODEPULSE', 'Team Leader', 'REG012'),
+  ('WINDEN', 'Team Leader', 'REG013'),
+  ('PROMPT PIRATES', 'Team Leader', 'REG014'),
+  ('IMMORTAL', 'Team Leader', 'REG015'),
+  ('KINETIC CODERS', 'Team Leader', 'REG016'),
+  ('TECH NOVA', 'Team Leader', 'REG017'),
+  ('ZYRA', 'Team Leader', 'REG018'),
+  ('TEAM ELITE', 'Team Leader', 'REG019'),
+  ('TEAM INNOVATORS', 'Team Leader', 'REG020'),
+  ('NEXT GEN SOLUTIONS', 'Team Leader', 'REG021')
+ON CONFLICT (team_name) DO NOTHING;
 
 -- ============================================================
 -- ROUND 1 QUESTIONS (30 Unique Questions - Java & DSA)

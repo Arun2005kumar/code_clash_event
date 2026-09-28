@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
 import { setTeamSession, getTeamSession } from '@/lib/auth/session';
 import BloomTransition from '@/components/animations/BloomTransition';
+import { findOfficialTeam } from '@/lib/teams';
 
 export default function HomePage() {
   const router = useRouter();
@@ -52,6 +53,16 @@ export default function HomePage() {
       return;
     }
 
+    // STRICT MATCHING against official registered team list
+    const officialTeamName = findOfficialTeam(cleanTeamName);
+
+    if (!officialTeamName) {
+      toast.error(
+        `🚫 ACCESS DENIED: "${cleanTeamName}" is not an authorized official team. Only registered event teams are permitted to log in.`
+      );
+      return;
+    }
+
     // 0. Request browser fullscreen immediately inside the user submit gesture context
     try {
       const el = document.documentElement;
@@ -69,16 +80,16 @@ export default function HomePage() {
     }
 
     setLoading(true);
-    setFeedbackMsg(`Connecting ${cleanTeamName} to Stage 01 Sprint... 🚀`);
+    setFeedbackMsg(`Connecting ${officialTeamName} to Stage 01 Sprint... 🚀`);
 
     try {
       const supabase = createClient();
 
-      // 1. Check existing team by team_name or leader_reg_no
+      // 1. Check existing team by official team_name
       const { data: existingTeam } = await supabase
         .from('teams')
         .select('*')
-        .or(`team_name.ilike.${cleanTeamName},leader_reg_no.ilike.${cleanRegNo}`)
+        .ilike('team_name', officialTeamName)
         .maybeSingle();
 
       if (existingTeam) {
@@ -100,26 +111,27 @@ export default function HomePage() {
           .update({
             login_status: true,
             leader_name: cleanLeaderName,
+            leader_reg_no: cleanRegNo,
             updated_at: new Date().toISOString(),
           })
           .eq('id', existingTeam.id);
 
         setTeamSession({
           teamId: existingTeam.id,
-          teamName: existingTeam.team_name,
+          teamName: officialTeamName,
           leaderName: cleanLeaderName,
           leaderRegNo: cleanRegNo,
         });
 
         setFeedbackMsg(`Authenticated! Loading challenges... ⚡`);
-        toast.success(`🎉 WELCOME BACK, ${existingTeam.team_name.toUpperCase()}!`);
+        toast.success(`🎉 WELCOME BACK, ${officialTeamName}!`);
         setTimeout(() => setBloom(true), 600);
         return;
       }
 
-      // 2. Try RPC registration
+      // 2. Try RPC registration with official team name
       const { data: rpcData, error: rpcError } = await supabase.rpc('validate_team_login', {
-        p_team_name: cleanTeamName,
+        p_team_name: officialTeamName,
         p_leader_name: cleanLeaderName,
         p_leader_reg_no: cleanRegNo,
       });
@@ -128,21 +140,21 @@ export default function HomePage() {
         const res = rpcData[0];
         setTeamSession({
           teamId: res.team_id,
-          teamName: res.team_name,
-          leaderName: res.leader_name,
-          leaderRegNo: res.leader_reg_no,
+          teamName: officialTeamName,
+          leaderName: cleanLeaderName,
+          leaderRegNo: cleanRegNo,
         });
         setFeedbackMsg(`Authenticated! Loading challenges... ⚡`);
-        toast.success(`🎉 WELCOME, ${res.team_name.toUpperCase()}!`);
+        toast.success(`🎉 WELCOME, ${officialTeamName}!`);
         setTimeout(() => setBloom(true), 600);
         return;
       }
 
-      // 3. Fallback insert new team
+      // 3. Fallback insert new team with official name
       const { data: newTeam, error: insertError } = await supabase
         .from('teams')
         .insert({
-          team_name: cleanTeamName,
+          team_name: officialTeamName,
           leader_name: cleanLeaderName,
           leader_reg_no: cleanRegNo,
           login_status: true,
