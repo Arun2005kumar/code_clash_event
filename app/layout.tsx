@@ -1,8 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from 'sonner';
-import BootSequence from '@/components/animations/BootSequence';
-
 export const metadata: Metadata = {
   title: 'Code Clash ⚡',
   description:
@@ -34,7 +32,6 @@ export default function RootLayout({
         />
       </head>
       <body className="bg-background font-body-md text-on-surface min-h-screen flex flex-col selection:bg-secondary-container selection:text-on-surface">
-        <BootSequence />
         {children}
         <Toaster
           position="top-right"
