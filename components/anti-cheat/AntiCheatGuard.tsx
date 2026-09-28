@@ -383,8 +383,16 @@ export default function AntiCheatGuard({
   useEffect(() => {
     guardMountedRef.current = true
 
-    // 1. Enter fullscreen immediately on mount
+    // 1. Enter fullscreen immediately on mount & setup click-to-fullscreen listener
     requestFullscreen()
+
+    const handleUserInteractionForFullscreen = () => {
+      if (!isCurrentlyFullscreen()) {
+        requestFullscreen()
+      }
+    }
+    window.addEventListener('click', handleUserInteractionForFullscreen, { capture: true })
+    window.addEventListener('keydown', handleUserInteractionForFullscreen, { capture: true })
 
     // 2. Fullscreen change events
     document.addEventListener('fullscreenchange', handleFullscreenChange)
@@ -424,6 +432,8 @@ export default function AntiCheatGuard({
     return () => {
       guardMountedRef.current = false
 
+      window.removeEventListener('click', handleUserInteractionForFullscreen, { capture: true })
+      window.removeEventListener('keydown', handleUserInteractionForFullscreen, { capture: true })
       document.removeEventListener('fullscreenchange', handleFullscreenChange)
       document.removeEventListener('webkitfullscreenchange', handleFullscreenChange)
       document.removeEventListener('mozfullscreenchange', handleFullscreenChange)

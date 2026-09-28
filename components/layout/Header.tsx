@@ -55,6 +55,15 @@ export default function Header({ activePath }: HeaderProps) {
           if ((data as any).round3_active) {
             setActiveRound('round3');
             setActiveRoundLabel('ROUND 3 LIVE');
+
+            // Requirement 7: Auto-open Round 3 for participant users regardless of currently open page
+            if (typeof window !== 'undefined' && session) {
+              const currPath = window.location.pathname;
+              if (!currPath.startsWith('/admin') && !currPath.startsWith('/round3')) {
+                toast.info('🚀 Round 3 Activated! Redirecting to Heist Mission...', { id: 'r3-redirect' });
+                router.push('/round3');
+              }
+            }
           } else if (data.round2_active) {
             setActiveRound('round2');
             setActiveRoundLabel('ROUND 2 LIVE');
@@ -84,7 +93,7 @@ export default function Header({ activePath }: HeaderProps) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [session, router, pathname]);
 
   // Click outside listener for popover
   useEffect(() => {

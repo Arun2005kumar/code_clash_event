@@ -24,7 +24,7 @@ const JAVA_CODE_SNIPPET = `static int test() {
             result = i;
             return result;
         } finally {
-            result = 100;  // does this affect what's printed?
+            result = 100;
         }
     }
 
@@ -37,16 +37,8 @@ public class Main {
     }
 }`;
 
-// Map MCQ letter → value submitted to Supabase (DB stores numeric strings)
-const OPTIONS: { label: string; display: string; value: string }[] = [
-  { label: 'A', display: '0',   value: '0'   },
-  { label: 'B', display: '100', value: '100' },
-  { label: 'C', display: '-1',  value: '-1'  },
-  { label: 'D', display: '2',   value: '2'   },
-];
-
 export default function Mission2HackerReceipt({ teamId, mission, attempt, onSuccess, isExpired = false }: MissionProps) {
-  const [selected, setSelected] = useState<string | null>(null);   // letter: 'A' | 'B' | 'C' | 'D'
+  const [typedAnswer, setTypedAnswer] = useState<string>('');
   const [loading, setLoading]   = useState(false);
   const [solved, setSolved]     = useState(attempt?.is_correct ?? false);
   const [cluePiece, setCluePiece] = useState(attempt?.clue_piece_revealed ?? '');
@@ -54,15 +46,12 @@ export default function Mission2HackerReceipt({ teamId, mission, attempt, onSucc
 
   const handleConfirmAnswer = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selected || solved || isExpired || loading) return;
-
-    const option = OPTIONS.find(o => o.label === selected);
-    if (!option) return;
+    if (!typedAnswer.trim() || solved || isExpired || loading) return;
 
     setLoading(true);
     setErrorMsg('');
 
-    const res = await validateMissionAnswerServer(teamId, 2, option.value.trim());
+    const res = await validateMissionAnswerServer(teamId, 2, typedAnswer.trim());
     setLoading(false);
 
     if (res.is_correct) {
@@ -163,48 +152,30 @@ export default function Mission2HackerReceipt({ teamId, mission, attempt, onSucc
       ) : (
         <form onSubmit={handleConfirmAnswer} className="flex flex-col gap-space-md mt-space-xs">
           <label className="font-headline-sm text-headline-sm text-ink-primary font-black uppercase">
-            What will this Java program print?
+            Type your answer below: What will this Java program print?
           </label>
 
-          {/* Multiple Choice Options */}
-          <div className="grid grid-cols-2 gap-space-sm">
-            {OPTIONS.map(opt => (
-              <button
-                key={opt.label}
-                type="button"
-                disabled={isExpired || loading}
-                onClick={() => {
-                  if (!isExpired && !loading) {
-                    setSelected(opt.label);
-                    setErrorMsg('');
-                  }
-                }}
-                className={`
-                  flex items-center gap-space-sm px-space-md py-space-sm rounded-lg border-2 font-headline-sm text-headline-sm font-black transition-all cursor-pointer
-                  ${selected === opt.label
-                    ? 'bg-round-3-purple text-on-tertiary border-ink-primary shadow-[3px_3px_0px_#0F172A] scale-[0.98]'
-                    : 'bg-surface-container text-ink-primary border-ink-primary/40 hover:border-ink-primary hover:bg-surface-container-high hover:shadow-[2px_2px_0px_#0F172A]'
-                  }
-                  disabled:opacity-50 disabled:cursor-not-allowed
-                `}
-              >
-                <span className={`
-                  w-7 h-7 rounded-full border-2 flex items-center justify-center text-sm font-black shrink-0
-                  ${selected === opt.label ? 'border-on-tertiary bg-on-tertiary/20' : 'border-ink-primary/50'}
-                `}>
-                  {opt.label}
-                </span>
-                <span className="font-mono text-lg">{opt.display}</span>
-              </button>
-            ))}
+          {/* Text Box Input */}
+          <div className="relative">
+            <input
+              type="text"
+              value={typedAnswer}
+              onChange={(e) => {
+                setTypedAnswer(e.target.value);
+                setErrorMsg('');
+              }}
+              disabled={isExpired || loading}
+              placeholder="Enter output (e.g. 0)..."
+              className="w-full px-space-md py-space-md rounded-xl border-2 border-ink-primary bg-canvas-cream font-mono text-xl font-bold text-ink-primary placeholder:text-slate-400 focus:outline-none focus:ring-4 focus:ring-round-3-purple/20 shadow-[3px_3px_0px_#0F172A] disabled:opacity-50"
+            />
           </div>
 
           <button
             type="submit"
-            disabled={!selected || loading || isExpired}
-            className="w-full py-space-sm px-space-md bg-round-3-purple hover:bg-tertiary-container text-on-tertiary font-headline-sm text-headline-sm rounded-lg shadow-[2px_2px_0px_#0F172A] border-2 border-ink-primary disabled:opacity-50 transition-all cursor-pointer font-black"
+            disabled={!typedAnswer.trim() || loading || isExpired}
+            className="w-full py-space-sm px-space-md bg-round-3-purple hover:bg-tertiary-container text-on-tertiary font-headline-sm text-headline-sm rounded-xl shadow-[3px_3px_0px_#0F172A] border-2 border-ink-primary disabled:opacity-50 transition-all cursor-pointer font-black"
           >
-            {loading ? 'CHECKING...' : `CONFIRM ANSWER ${selected ? `(${selected})` : ''} →`}
+            {loading ? 'CHECKING ANSWER...' : 'SUBMIT ANSWER →'}
           </button>
 
           {errorMsg && (

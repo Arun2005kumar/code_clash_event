@@ -30,50 +30,82 @@ export default function AdminTeamsPage() {
   const [adding, setAdding] = useState(false);
 
   const loadTeams = async () => {
-    const supabase = createClient();
-    const { data: violations } = await supabase.rpc('get_violation_counts');
-    const violationMap = new Map((violations ?? []).map((v: any) => [v.team_id, v]));
+    try {
+      const supabase = createClient();
+      let violationMap = new Map();
+      try {
+        const { data: violations } = await supabase.rpc('get_violation_counts');
+        if (violations) {
+          violationMap = new Map((violations ?? []).map((v: any) => [v.team_id, v]));
+        }
+      } catch (e) {
+        console.warn('RPC get_violation_counts failed, falling back:', e);
+      }
 
-    const { data: teams } = await supabase
-      .from('teams')
-      .select(`*, round1_attempts(score, status), round2_team_state(score, coins)`)
-      .order('created_at');
+      // Main query with relational fallback
+      let { data: rawTeams, error } = await supabase
+        .from('teams')
+        .select(`*, round1_attempts(score, status), round2_team_state(score, coins)`)
+        .order('created_at');
 
-    const rows: TeamRow[] = (teams ?? []).map((t: any) => {
-      const v = violationMap.get(t.id) as any;
-      const submittedR1 = t.round1_attempts?.find((a: any) => a.status === 'submitted' || a.status === 'auto_submitted') || t.round1_attempts?.[0];
-      return {
-        id: t.id,
-        team_name: t.team_name,
-        leader_name: t.leader_name,
-        leader_reg_no: t.leader_reg_no,
-        login_status: t.login_status,
-        created_at: t.created_at,
-        r1_status: submittedR1?.status,
-        r1_score: submittedR1?.score ?? 0,
-        r2_score: t.round2_team_state?.[0]?.score ?? 0,
-        r2_coins: t.round2_team_state?.[0]?.coins ?? 100,
-        total_violations: v?.total_violations ?? 0,
-        is_flagged: v?.is_flagged ?? false,
-      };
-    });
+      if (error || !rawTeams) {
+        // Fallback to simple teams query if join fails
+        const { data: simpleTeams } = await supabase.from('teams').select('*').order('created_at');
+        rawTeams = simpleTeams || [];
+      }
 
-    setTeams(rows);
-    setLoading(false);
+      const rows: TeamRow[] = (rawTeams ?? []).map((t: any) => {
+        const v = violationMap.get(t.id) as any;
+        const submittedR1 = Array.isArray(t.round1_attempts)
+          ? t.round1_attempts.find((a: any) => a.status === 'submitted' || a.status === 'auto_submitted') || t.round1_attempts[0]
+          : t.round1_attempts;
+        const r2State = Array.isArray(t.round2_team_state) ? t.round2_team_state[0] : t.round2_team_state;
+
+        return {
+          id: t.id,
+          team_name: t.team_name,
+          leader_name: t.leader_name,
+          leader_reg_no: t.leader_reg_no,
+          login_status: t.login_status,
+          created_at: t.created_at,
+          r1_status: submittedR1?.status,
+          r1_score: submittedR1?.score ?? 0,
+          r2_score: r2State?.score ?? 0,
+          r2_coins: r2State?.coins ?? 100,
+          total_violations: v?.total_violations ?? 0,
+          is_flagged: v?.is_flagged ?? false,
+        };
+      });
+
+      setTeams(rows);
+    } catch (err) {
+      console.error('Error loading teams:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     loadTeams();
 
     const supabase = createClient();
+    let timer: NodeJS.Timeout | null = null;
+    const debouncedReload = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => loadTeams(), 500);
+    };
+
     const channel = supabase
       .channel('admin-teams-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'teams' }, () => loadTeams())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'round1_attempts' }, () => loadTeams())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'round2_team_state' }, () => loadTeams())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'teams' }, () => debouncedReload())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'round1_attempts' }, () => debouncedReload())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'round2_team_state' }, () => debouncedReload())
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      if (timer) clearTimeout(timer);
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const addTeam = async () => {

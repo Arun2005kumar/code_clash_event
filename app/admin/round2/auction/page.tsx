@@ -150,13 +150,12 @@ export default function AdminAuctionPage() {
       setAwaitingVerdict(true);
       setPendingWinnerId(prev => prev || mapped[0]?.team_id || null);
     } else {
-      setHammerDropped(false);
-      setAwaitingVerdict(false);
-      setPendingWinnerId(null);
+      // Keep awaitingVerdict true if admin locally activated hammer lock
+      setHammerDropped(prev => prev || awaitingVerdict);
     }
 
     setLoading(false);
-  }, [getSupabase]);
+  }, [getSupabase, awaitingVerdict]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -171,9 +170,20 @@ export default function AdminAuctionPage() {
   }, [getSupabase, loadData]);
 
   const dropHammer = async (teamId: string) => {
-    if (hammerDropped) { toast.error('Hammer already dropped.'); return; }
+    if (hammerDropped && !awaitingVerdict) { toast.error('Hammer already dropped.'); return; }
+    const supabase = getSupabase();
     if (currentQuestion?.id) {
-      const supabase = getSupabase();
+      await supabase.from('round2_questions').upsert({
+        id: currentQuestion.id,
+        question_number: currentQuestion.question_number || 1,
+        question_text: currentQuestion.question_text || '',
+        option_a: (currentQuestion as any).option_a || '',
+        option_b: (currentQuestion as any).option_b || '',
+        option_c: (currentQuestion as any).option_c || '',
+        option_d: (currentQuestion as any).option_d || '',
+        correct_option: (currentQuestion as any).correct_option || 'A',
+        status: 'locked',
+      });
       await supabase.rpc('lock_hammer_for_question', { p_question_id: currentQuestion.id });
     }
     setPendingWinnerId(teamId);
@@ -213,12 +223,15 @@ export default function AdminAuctionPage() {
       toast.success(`HAMMER! ${teamLabel} CORRECT! +${pts} pts | Coins reset to 100`);
     } else {
       // Wrong bid: check top 3 sequential chance rule!
-      // Only top 3 highest bids have a chance (indices 0, 1, 2)
       if (currentWinnerIdx >= 0 && currentWinnerIdx < 2 && bids.length > currentWinnerIdx + 1) {
         const nextTeam = bids[currentWinnerIdx + 1];
         setPendingWinnerId(nextTeam.team_id);
-        setStatusMsg(`WRONG: ${teamLabel} failed. Chance #${currentWinnerIdx + 2} passed to ${nextTeam.team_name} (${currentWinnerIdx + 2}${currentWinnerIdx + 1 === 1 ? 'nd' : 'rd'} highest bid)!`);
-        toast.warning(`WRONG: ${teamLabel}! Chance passed to #${currentWinnerIdx + 2} (${nextTeam.team_name})`);
+        const announceMsg = `Option WRONG for ${teamLabel}! Bid moves to next team: ${nextTeam.team_name} (${currentWinnerIdx + 2}${currentWinnerIdx + 1 === 1 ? 'nd' : 'rd'} highest bidder)!`;
+        setStatusMsg(announceMsg);
+        toast.warning(announceMsg);
+
+        // Notify client screens via competition settings update event
+        await supabase.from('competition_settings').update({ updated_at: new Date().toISOString() }).neq('id', '00000000-0000-0000-0000-000000000000');
       } else {
         // No more chances in top 3! Finalize lot as resolved with no correct answer
         const { data, error } = await supabase.rpc('lock_hammer_with_verdict', {
@@ -240,6 +253,20 @@ export default function AdminAuctionPage() {
     }
     loadData();
     setHammering(false);
+  };
+
+  const handleProceedToRound3 = async () => {
+    const supabase = getSupabase();
+    await supabase.from('competition_settings').update({
+      round1_active: false,
+      round2_active: false,
+      round3_active: true,
+      updated_at: new Date().toISOString(),
+    }).neq('id', '00000000-0000-0000-0000-000000000000');
+    toast.success('🚀 Round 3 Activated for all teams! Redirecting to Round 3 Admin Overview...');
+    if (typeof window !== 'undefined') {
+      window.location.href = '/admin/round3';
+    }
   };
 
   const handleAdvanceQuestion = async (nextQNum: number) => {
@@ -298,12 +325,21 @@ export default function AdminAuctionPage() {
           <h1 className="font-headline-lg text-headline-lg text-ink-primary tracking-tight mt-1">ROUND 2 — LIVE AUCTION ROOM</h1>
           <p className="font-body-md text-body-md text-ink-secondary">Active lot: Q{String(currentQuestion?.question_number || 1).padStart(2,'0')} — lock winner then declare verdict.</p>
         </div>
-        <div className="flex items-center gap-space-sm bg-surface-muted p-space-sm rounded-xl border-2 border-ink-primary">
-          <span className={`px-space-md py-space-sm rounded-lg font-label-ticker text-label-ticker font-bold border border-ink-primary ${
-            hammerDropped ? 'bg-ink-primary text-canvas-cream' : 'bg-status-correct/15 text-status-correct'
-          }`}>
-            {hammerDropped ? 'HAMMER DROPPED — LOT CLOSED' : 'BIDDING OPEN — AWAITING HAMMER'}
-          </span>
+        <div className="flex flex-wrap items-center gap-space-sm">
+          <button
+            onClick={handleProceedToRound3}
+            className="px-space-md py-space-sm bg-round-3-purple hover:bg-round-3-purple/90 text-white rounded-xl font-headline-sm text-body-md font-black border-2 border-ink-primary shadow-[2px_2px_0px_#0F172A] cursor-pointer flex items-center gap-2 transition-all hover:scale-105"
+          >
+            <span>PROCEED TO ROUND 3</span>
+            <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+          </button>
+          <div className="flex items-center gap-space-sm bg-surface-muted p-space-sm rounded-xl border-2 border-ink-primary">
+            <span className={`px-space-md py-space-sm rounded-lg font-label-ticker text-label-ticker font-bold border border-ink-primary ${
+              hammerDropped ? 'bg-ink-primary text-canvas-cream' : 'bg-status-correct/15 text-status-correct'
+            }`}>
+              {hammerDropped ? 'HAMMER DROPPED — LOT CLOSED' : 'BIDDING OPEN — AWAITING HAMMER'}
+            </span>
+          </div>
         </div>
       </div>
 

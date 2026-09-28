@@ -45,20 +45,8 @@ export default function MissionHub({ teamName, missions, attempts, teamState }: 
             </div>
           </div>
 
-          {/* Right: Team Economy & Heist Chrono */}
+          {/* Right: Team Info & Heist Chrono */}
           <div className="flex flex-wrap items-center gap-space-sm z-10">
-            {/* Team Purse */}
-            <div className="flex items-center gap-space-xs px-space-md py-space-xs bg-canvas-cream text-ink-primary rounded-lg shadow-[2px_2px_0px_#0F172A] border border-ink-primary">
-              <span className="text-round-2-amber text-[18px] leading-none">🪙</span>
-              <div className="flex flex-col">
-                <span className="font-label-sticker text-label-sticker text-ink-secondary leading-none font-bold">
-                  TEAM PURSE
-                </span>
-                <span className="font-headline-sm text-body-md font-black text-ink-primary">
-                  100 Coins
-                </span>
-              </div>
-            </div>
 
             {/* Team Info */}
             <div className="flex items-center gap-space-xs px-space-md py-space-xs bg-canvas-cream text-ink-primary rounded-lg shadow-[2px_2px_0px_#0F172A] border border-ink-primary">

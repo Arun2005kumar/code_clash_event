@@ -5,6 +5,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import { motion, AnimatePresence } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
 import { getTeamSession } from '@/lib/auth/session';
 import AntiCheatGuard from '@/components/anti-cheat/AntiCheatGuard';
@@ -105,7 +106,7 @@ export default function Round2Page() {
   const [session, setSession] = useState<ReturnType<typeof getTeamSession>>(null);
   const [teamState, setTeamState] = useState<Round2TeamState | null>(null);
   const [currentQuestion, setCurrentQuestion] = useState<Round2Question | null>(null);
-  const [selectedOption, setSelectedOption] = useState<Option>('A');
+  const [selectedOption, setSelectedOption] = useState<Option | null>(null);
   const [selectedBid, setSelectedBid] = useState<BidAmount>(4);
   const [bidStatus, setBidStatus] = useState<BidStatus>('idle');
   const [myBid, setMyBid] = useState<Round2Bid | null>(null);
@@ -201,7 +202,7 @@ export default function Round2Page() {
       if (prevQuestionId.current && prevQuestionId.current !== newQuestionKey) {
         setMyBid(null);
         setMyResult(null);
-        setSelectedOption('A');
+        setSelectedOption(null);
         setSelectedBid(4);
         setBidStatus('idle');
         toast.info(`📢 New lot opened: Question ${q.question_number}`);
@@ -224,7 +225,7 @@ export default function Round2Page() {
         setBidStatus(q.status === 'resolved' ? 'resolved' : 'placed');
       } else {
         setMyBid(null);
-        setSelectedOption('A');
+        setSelectedOption(null);
         setSelectedBid(4);
         setBidStatus('idle');
       }
@@ -529,14 +530,17 @@ export default function Round2Page() {
                         const optionText = currentQuestion ? getOptionText(opt) : opt;
 
                         return (
-                          <button
+                          <motion.button
                             key={opt}
                             type="button"
                             disabled={bidStatus === 'placing'}
                             onClick={() => setSelectedOption(opt)}
-                            className={`answer-card text-left p-space-md rounded-xl transition-all flex items-center justify-between group cursor-pointer border-2 border-ink-primary ${
+                            whileHover={{ scale: 1.02, y: -2 }}
+                            whileTap={{ scale: 0.97 }}
+                            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                            className={`answer-card text-left p-space-md rounded-xl transition-colors flex items-center justify-between group cursor-pointer border-2 border-ink-primary ${
                               isSelected
-                                ? 'bg-round-1-blue/10 ring-2 ring-round-1-blue shadow-md'
+                                ? 'bg-round-1-blue/15 ring-2 ring-round-1-blue shadow-[4px_4px_0px_#0F172A]'
                                 : 'bg-surface-muted hover:bg-surface-container shadow-sm'
                             }`}
                           >
@@ -556,7 +560,7 @@ export default function Round2Page() {
                             <span className={`check-icon material-symbols-outlined text-status-correct text-[28px] ${isSelected ? 'opacity-100' : 'opacity-0'}`} style={{ fontVariationSettings: "'FILL' 1" }}>
                               check_circle
                             </span>
-                          </button>
+                          </motion.button>
                         );
                       })}
                     </div>
@@ -815,7 +819,7 @@ export default function Round2Page() {
                           <div className="flex items-center gap-space-sm">
                             <span className="material-symbols-outlined text-status-correct text-[24px]">verified</span>
                             <span className="font-headline-sm text-headline-sm text-ink-primary font-bold" id="locked-summary">
-                              {myBid ? `🔒 BID LOCKED: ${myBid.bid_amount} 🪙 on Option ${myBid.selected_option} (${getOptionText(myBid.selected_option as Option)})` : `🔒 BID STAGED: ${selectedBid} 🪙 on Option ${selectedOption} (${getOptionText(selectedOption)})`}
+                              {myBid ? `🔒 BID LOCKED: ${myBid.bid_amount} 🪙 on Option ${myBid.selected_option} (${getOptionText(myBid.selected_option as Option)})` : `🔒 BID STAGED: ${selectedBid} 🪙 on Option ${selectedOption || '—'} (${selectedOption ? getOptionText(selectedOption) : 'No option selected'})`}
                             </span>
                           </div>
                           <span className="px-space-xs py-0.5 rounded bg-status-correct text-on-primary font-label-sticker text-label-sticker font-bold uppercase border border-ink-primary">
