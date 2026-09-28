@@ -15,7 +15,6 @@ export default function BonusRiddle({ teamId }: BonusRiddleProps) {
   const [loading, setLoading] = useState(false);
   const [solved, setSolved] = useState(false);
   const [showHint1, setShowHint1] = useState(false);
-  const [showHint2, setShowHint2] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,21 +82,6 @@ export default function BonusRiddle({ teamId }: BonusRiddleProps) {
         {showHint1 && (
           <div className="p-2 bg-round-2-amber/15 rounded border border-round-2-amber/40 text-xs font-semibold text-ink-primary">
             <strong>Hint 1:</strong> Read the previous line OUT LOUD. Describe how many of each digit appear in a row.
-          </div>
-        )}
-
-        {showHint1 && !showHint2 && (
-          <button
-            type="button"
-            onClick={() => setShowHint2(true)}
-            className="text-xs font-bold text-round-2-orange hover:underline text-left"
-          >
-            💡 Need Hint 2?
-          </button>
-        )}
-        {showHint2 && (
-          <div className="p-2 bg-round-2-amber/15 rounded border border-round-2-amber/40 text-xs font-semibold text-ink-primary">
-            <strong>Hint 2:</strong> The line &quot;1 1 1 2 2 1&quot; contains: three 1s, two 2s, one 1. Write that in numbers!
           </div>
         )}
       </div>
