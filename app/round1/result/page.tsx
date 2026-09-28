@@ -14,6 +14,7 @@ import { formatTime } from '@/lib/utils';
 import BloomTransition from '@/components/animations/BloomTransition';
 import Header from '@/components/layout/Header';
 import FormattedQuestion from '@/components/quiz/FormattedQuestion';
+import AntiCheatGuard from '@/components/anti-cheat/AntiCheatGuard';
 
 interface AnswerDetail {
   selected_option: string | null;
@@ -28,6 +29,7 @@ export default function Round1ResultPage() {
   const [userAnswers, setUserAnswers] = useState<Record<string, AnswerDetail>>({});
   const [loading, setLoading] = useState(true);
   const [bloom, setBloom] = useState(false);
+  const session = getTeamSession();
 
   const load = useCallback(async () => {
     const session = getTeamSession();
@@ -146,8 +148,9 @@ export default function Round1ResultPage() {
   const grade = percentage >= 90 ? '🏆' : percentage >= 70 ? '⭐' : percentage >= 50 ? '👍' : '😅';
 
   return (
-    <div className="min-h-screen bg-dot-grid font-body-md text-ink-primary flex flex-col">
-      <Header />
+    <AntiCheatGuard teamId={session?.teamId || ''} teamName={session?.teamName || ''} roundName="Round 1 Result">
+      <div className="min-h-screen bg-dot-grid font-body-md text-ink-primary flex flex-col">
+        <Header />
 
       <main className="flex-grow pt-24 pb-16 px-4 sm:px-6 max-w-4xl mx-auto w-full">
         {/* Header Title */}
@@ -332,5 +335,6 @@ export default function Round1ResultPage() {
 
       <BloomTransition isActive={bloom} onComplete={() => router.push('/round2')} />
     </div>
+    </AntiCheatGuard>
   );
 }

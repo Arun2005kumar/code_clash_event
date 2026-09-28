@@ -8,6 +8,7 @@ interface AntiCheatOverlayProps {
   countdown: number
   onDismiss: () => void
   teamName: string
+  onRequestFullscreen?: () => void
 }
 
 const VIOLATION_CONTENT: Record<string, {
@@ -134,6 +135,7 @@ export default function AntiCheatOverlay({
   countdown,
   onDismiss,
   teamName,
+  onRequestFullscreen,
 }: AntiCheatOverlayProps) {
   const [messageIndex] = useState(() => Math.floor(Math.random() * 3))
   const content = VIOLATION_CONTENT[type] ?? VIOLATION_CONTENT['keyboard_shortcut']
@@ -154,8 +156,15 @@ export default function AntiCheatOverlay({
 
   const colors = warningColors[warningLevel]
 
+  const handleOverlayClick = () => {
+    if (isFullscreen && onRequestFullscreen) {
+      onRequestFullscreen()
+    }
+  }
+
   return (
     <div
+      onClick={handleOverlayClick}
       style={{
         position: 'fixed',
         inset: 0,
@@ -167,9 +176,16 @@ export default function AntiCheatOverlay({
         alignItems: 'center',
         justifyContent: 'center',
         padding: '24px',
+        cursor: isFullscreen ? 'pointer' : 'default',
       }}
     >
       <div
+        onClick={(e) => {
+          if (isFullscreen && onRequestFullscreen) {
+            e.stopPropagation()
+            onRequestFullscreen()
+          }
+        }}
         style={{
           background: colors.bg,
           border: `3px solid ${colors.border}`,
@@ -231,28 +247,50 @@ export default function AntiCheatOverlay({
             : `Violation #${violationCount} — Logged to admin`}
         </div>
 
-        {/* Fullscreen countdown */}
+        {/* Fullscreen countdown & Action button */}
         {isFullscreen && (
-          <div>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <div
               style={{
                 fontSize: '48px',
                 fontWeight: 900,
                 color: '#60a5fa',
                 fontFamily: 'monospace',
-                marginBottom: '8px',
+                marginBottom: '4px',
               }}
             >
-              {countdown}
+              {countdown > 0 ? countdown : '0'}
             </div>
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                if (onRequestFullscreen) onRequestFullscreen()
+              }}
+              style={{
+                background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '12px',
+                padding: '14px 28px',
+                fontSize: '15px',
+                fontWeight: 800,
+                cursor: 'pointer',
+                marginTop: '12px',
+                marginBottom: '12px',
+                boxShadow: '0 4px 14px rgba(37, 99, 235, 0.4)',
+                letterSpacing: '0.02em',
+              }}
+            >
+              🖥️ ENTER FULLSCREEN MODE
+            </button>
             <div
               style={{
                 fontSize: '13px',
-                color: 'rgba(255,255,255,0.5)',
+                color: 'rgba(255,255,255,0.6)',
                 marginBottom: '0',
               }}
             >
-              Re-entering fullscreen automatically...
+              Click button or tap anywhere to return to exam
             </div>
           </div>
         )}

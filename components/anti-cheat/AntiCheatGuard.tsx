@@ -3,6 +3,9 @@
 import { useEffect, useRef, useCallback, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { logViolation } from '@/lib/anti-cheat/violations'
+import { antiCheatManager } from '@/lib/anti-cheat/AntiCheatManager'
+import { clearTeamSession } from '@/lib/auth/session'
+import { toast } from 'sonner'
 import AntiCheatOverlay from './AntiCheatOverlay'
 
 interface AntiCheatGuardProps {
@@ -72,9 +75,8 @@ export default function AntiCheatGuard({
       } else {
         setFullscreenSupported(false)
       }
-    } catch (err) {
-      // Fullscreen blocked (mobile / iframe / browser policy)
-      setFullscreenSupported(false)
+    } catch {
+      // Browser requires user gesture for requestFullscreen — do NOT set fullscreenSupported to false
     } finally {
       fullscreenRequestInProgressRef.current = false
     }
@@ -122,16 +124,28 @@ export default function AntiCheatGuard({
     async (type: ViolationType) => {
       if (!guardMountedRef.current) return
 
-      // Deduplicate rapid repeat violations of same type
-      violationCountRef.current += 1
-      const newCount = violationCountRef.current
-      setViolationCount(newCount)
+      // Deduplicate rapid repeat signals
+      if (!antiCheatManager.shouldLogViolation(type)) return
+
       setOverlayType(type)
       setOverlayVisible(true)
       overlayVisibleRef.current = true
 
-      // Log to Supabase
-      await logViolation({ teamId, violationType: type, roundName })
+      // Log to Supabase and retrieve actual exact count
+      const updatedCount = await logViolation({ teamId, violationType: type, roundName })
+      const finalCount = updatedCount > 0 ? updatedCount : (violationCountRef.current + 1)
+      violationCountRef.current = finalCount
+      setViolationCount(finalCount)
+
+      // If violations exceed 3 (> 3 violations, i.e. 4+), terminate session and require admin unlock
+      if (finalCount > 3) {
+        toast.error('🚫 TEST TERMINATED: Exceeded maximum allowed violations (3). Session locked.', { id: 'term-toast' })
+        setTimeout(() => {
+          clearTeamSession()
+          if (typeof window !== 'undefined') window.location.href = '/?error=disqualified'
+        }, 2500)
+        return
+      }
 
       // For fullscreen: start countdown to auto re-enter
       if (type === 'fullscreen_exit') {
@@ -147,10 +161,15 @@ export default function AntiCheatGuard({
     const nowFullscreen = isCurrentlyFullscreen()
     setIsFullscreen(nowFullscreen)
 
-    if (!nowFullscreen && fullscreenSupported) {
+    if (nowFullscreen) {
+      if (overlayVisibleRef.current && overlayType === 'fullscreen_exit') {
+        setOverlayVisible(false)
+        overlayVisibleRef.current = false
+      }
+    } else if (fullscreenSupported) {
       triggerViolation('fullscreen_exit')
     }
-  }, [isCurrentlyFullscreen, fullscreenSupported, triggerViolation])
+  }, [isCurrentlyFullscreen, overlayType, fullscreenSupported, triggerViolation])
 
   const dismissOverlay = useCallback(() => {
     if (overlayType === 'fullscreen_exit') return // Cannot dismiss fullscreen overlay manually
@@ -383,7 +402,18 @@ export default function AntiCheatGuard({
   useEffect(() => {
     guardMountedRef.current = true
 
-    // 1. Enter fullscreen immediately on mount & setup click-to-fullscreen listener
+    // 1. Check if currently fullscreen on mount; if not, trigger overlay immediately
+    const currentlyFs = isCurrentlyFullscreen()
+    setIsFullscreen(currentlyFs)
+
+    if (!currentlyFs) {
+      setOverlayType('fullscreen_exit')
+      setOverlayVisible(true)
+      overlayVisibleRef.current = true
+      startFullscreenCountdown()
+    }
+
+    // Try requesting fullscreen immediately
     requestFullscreen()
 
     const handleUserInteractionForFullscreen = () => {
@@ -532,6 +562,7 @@ export default function AntiCheatGuard({
           countdown={countdown}
           onDismiss={dismissOverlay}
           teamName={teamName}
+          onRequestFullscreen={requestFullscreen}
         />
       )}
       <div

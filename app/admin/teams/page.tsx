@@ -121,6 +121,14 @@ export default function AdminTeamsPage() {
     setAdding(false);
   };
 
+  const handleResetViolations = async (teamId: string) => {
+    const supabase = createClient();
+    await supabase.from('anti_cheat_violations').delete().eq('team_id', teamId);
+    await supabase.from('teams').update({ login_status: true }).eq('id', teamId);
+    toast.success('Team violations cleared & team unlocked for continuation!');
+    loadTeams();
+  };
+
   const resetTeamLogin = async (teamId: string) => {
     const supabase = createClient();
     await supabase.from('teams').update({ login_status: false }).eq('id', teamId);
@@ -251,12 +259,19 @@ export default function AdminTeamsPage() {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`font-extrabold ${team.total_violations >= 3 ? 'text-rose-600' : team.total_violations > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
-                      {team.total_violations >= 3 && '⚠️ '}
-                      {team.total_violations}
+                    <span className={`font-extrabold ${team.total_violations > 3 ? 'text-rose-600 font-black' : team.total_violations > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                      {team.total_violations > 3 ? '🚫 LOCKED OUT (' + team.total_violations + ')' : team.total_violations > 0 ? '⚠️ ' + team.total_violations : team.total_violations}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-6 py-4 whitespace-nowrap flex items-center gap-2">
+                    {team.total_violations > 0 && (
+                      <button
+                        onClick={() => handleResetViolations(team.id)}
+                        className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-colors cursor-pointer shadow-xs"
+                      >
+                        🔓 Allow Continuation
+                      </button>
+                    )}
                     <button
                       onClick={() => resetTeamLogin(team.id)}
                       className="px-3 py-1.5 rounded-lg border-1.5 border-slate-200 hover:border-rose-400 hover:bg-rose-50 hover:text-rose-600 text-xs font-bold text-slate-600 transition-colors cursor-pointer"

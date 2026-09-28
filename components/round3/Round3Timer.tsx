@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
-const TOTAL_ROUND3_SECONDS = 1500; // 25 minutes global round time
+const TOTAL_ROUND3_SECONDS = 1800; // 30 minutes global round time
 
 interface Round3TimerProps {
   teamId: string;

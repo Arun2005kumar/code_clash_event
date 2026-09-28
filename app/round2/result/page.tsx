@@ -10,6 +10,7 @@ import { getTeamSession } from '@/lib/auth/session';
 import { Round2Result, Round2TeamState } from '@/types';
 import CountUp from '@/components/animations/CountUp';
 import FormattedQuestion from '@/components/quiz/FormattedQuestion';
+import AntiCheatGuard from '@/components/anti-cheat/AntiCheatGuard';
 
 interface AllQuestionKey {
   id: string;
@@ -29,6 +30,8 @@ export default function Round2ResultPage() {
   const [allQuestions, setAllQuestions] = useState<AllQuestionKey[]>([]);
   const [teamState, setTeamState] = useState<Round2TeamState | null>(null);
   const [loading, setLoading] = useState(true);
+  const [round3Active, setRound3Active] = useState(false);
+  const session = getTeamSession();
 
   useEffect(() => {
     const session = getTeamSession();
@@ -36,17 +39,33 @@ export default function Round2ResultPage() {
 
     const load = async () => {
       const supabase = createClient();
-      const [{ data: res }, { data: state }, { data: qData }] = await Promise.all([
+      const [{ data: res }, { data: state }, { data: qData }, { data: settings }] = await Promise.all([
         supabase.from('round2_results').select('*, round2_questions(question_number)').eq('team_id', session.teamId).order('resolved_at'),
         supabase.from('round2_team_state').select('*').eq('team_id', session.teamId).single(),
         supabase.from('round2_questions').select('*').order('question_number'),
+        supabase.from('competition_settings').select('round3_active').limit(1).maybeSingle(),
       ]);
       setResults(res ?? []);
       setTeamState(state);
       setAllQuestions(qData ?? []);
+      setRound3Active(!!settings?.round3_active);
       setLoading(false);
     };
     load();
+
+    const supabase = createClient();
+    const channel = supabase
+      .channel('round2-result-settings')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'competition_settings' }, (payload: any) => {
+        if (payload.new && typeof payload.new.round3_active === 'boolean') {
+          setRound3Active(payload.new.round3_active);
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [router]);
 
   if (loading) {
@@ -63,7 +82,8 @@ export default function Round2ResultPage() {
   };
 
   return (
-    <main className="min-h-screen bg-dot-grid p-6">
+    <AntiCheatGuard teamId={session?.teamId || ''} teamName={session?.teamName || ''} roundName="Round 2 Result">
+      <main className="min-h-screen bg-dot-grid p-6">
       <div className="max-w-3xl mx-auto space-y-6">
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-6">
           <span className="bg-amber-100 text-amber-700 text-xs font-bold px-3 py-1.5 rounded-full">ROUND 2 COMPLETE</span>
@@ -173,15 +193,29 @@ export default function Round2ResultPage() {
           </div>
         </div>
 
-        <motion.button
-          initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }}
-          whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-          onClick={() => router.push('/round3')}
-          className="w-full py-4 bg-slate-900 text-white font-bold rounded-2xl cursor-pointer"
-        >
-          Continue to Round 3 →
-        </motion.button>
+        {round3Active ? (
+          <motion.button
+            initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+            whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+            onClick={() => router.push('/round3')}
+            className="w-full py-4 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-black rounded-2xl cursor-pointer shadow-xl border-2 border-slate-900 flex items-center justify-center gap-2 text-lg uppercase tracking-wider"
+          >
+            <span>🚀 PROCEED TO ROUND 3 — TECH HEIST</span>
+            <span className="material-symbols-outlined text-[24px]">arrow_forward</span>
+          </motion.button>
+        ) : (
+          <div className="w-full p-6 bg-amber-50 border-2 border-amber-300 rounded-2xl text-center shadow-md flex flex-col items-center gap-2">
+            <div className="flex items-center gap-2 text-amber-800 font-extrabold text-base">
+              <span className="w-3 h-3 rounded-full bg-amber-500 animate-ping" />
+              <span>ROUND 2 COMPLETE — STANDBY FOR WINNER ANNOUNCEMENT</span>
+            </div>
+            <p className="text-xs font-semibold text-amber-900/80 max-w-md">
+              The admin is currently checking final leaderboard standings. Once Round 3 is activated by the admin, the Proceed to Round 3 button will unlock here automatically!
+            </p>
+          </div>
+        )}
       </div>
     </main>
+    </AntiCheatGuard>
   );
 }

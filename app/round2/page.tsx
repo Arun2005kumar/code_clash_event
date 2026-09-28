@@ -533,15 +533,17 @@ export default function Round2Page() {
                           <motion.button
                             key={opt}
                             type="button"
-                            disabled={bidStatus === 'placing'}
-                            onClick={() => setSelectedOption(opt)}
-                            whileHover={{ scale: 1.02, y: -2 }}
-                            whileTap={{ scale: 0.97 }}
+                            disabled={bidStatus === 'placing' || isAuctionClosed}
+                            onClick={() => !isAuctionClosed && setSelectedOption(opt)}
+                            whileHover={isAuctionClosed ? {} : { scale: 1.02, y: -2 }}
+                            whileTap={isAuctionClosed ? {} : { scale: 0.97 }}
                             transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-                            className={`answer-card text-left p-space-md rounded-xl transition-colors flex items-center justify-between group cursor-pointer border-2 border-ink-primary ${
-                              isSelected
-                                ? 'bg-round-1-blue/15 ring-2 ring-round-1-blue shadow-[4px_4px_0px_#0F172A]'
-                                : 'bg-surface-muted hover:bg-surface-container shadow-sm'
+                            className={`answer-card text-left p-space-md rounded-xl transition-colors flex items-center justify-between group border-2 border-ink-primary ${
+                              isAuctionClosed
+                                ? 'opacity-60 cursor-not-allowed bg-surface-muted'
+                                : isSelected
+                                ? 'bg-round-1-blue/15 ring-2 ring-round-1-blue shadow-[4px_4px_0px_#0F172A] cursor-pointer'
+                                : 'bg-surface-muted hover:bg-surface-container shadow-sm cursor-pointer'
                             }`}
                           >
                             <div className="flex items-center gap-space-sm">
@@ -634,12 +636,12 @@ export default function Round2Page() {
                     </div>
 
                     {/* Bidding Cards Tier Selector */}
-                    <div className="flex flex-col gap-space-md mb-space-lg" id="bid-selector-group">
+                    <div className={`flex flex-col gap-space-md mb-space-lg ${isAuctionClosed ? 'opacity-60 pointer-events-none' : ''}`} id="bid-selector-group">
                       {/* Tier 1: 1 Coin */}
                       <div
-                        onClick={() => setSelectedBid(1)}
-                        className={`bid-card cursor-pointer p-space-md rounded-xl transition-all flex items-center justify-between shadow-sm border-2 border-ink-primary ${
-                          selectedBid === 1 ? 'selected-bid bg-round-2-orange/15 ring-2 ring-round-2-orange shadow-lg' : 'bg-surface-muted hover:bg-surface-container'
+                        onClick={() => !isAuctionClosed && setSelectedBid(1)}
+                        className={`bid-card p-space-md rounded-xl transition-all flex items-center justify-between shadow-sm border-2 border-ink-primary ${
+                          isAuctionClosed ? 'cursor-not-allowed bg-surface-muted' : selectedBid === 1 ? 'selected-bid bg-round-2-orange/15 ring-2 ring-round-2-orange shadow-lg cursor-pointer' : 'bg-surface-muted hover:bg-surface-container cursor-pointer'
                         }`}
                       >
                         <div className="flex items-center gap-space-md">
@@ -658,9 +660,9 @@ export default function Round2Page() {
 
                       {/* Tier 2: 2 Coins */}
                       <div
-                        onClick={() => setSelectedBid(2)}
-                        className={`bid-card cursor-pointer p-space-md rounded-xl transition-all flex items-center justify-between shadow-sm border-2 border-ink-primary ${
-                          selectedBid === 2 ? 'selected-bid bg-round-2-orange/15 ring-2 ring-round-2-orange shadow-lg' : 'bg-surface-muted hover:bg-surface-container'
+                        onClick={() => !isAuctionClosed && setSelectedBid(2)}
+                        className={`bid-card p-space-md rounded-xl transition-all flex items-center justify-between shadow-sm border-2 border-ink-primary ${
+                          isAuctionClosed ? 'cursor-not-allowed bg-surface-muted' : selectedBid === 2 ? 'selected-bid bg-round-2-orange/15 ring-2 ring-round-2-orange shadow-lg cursor-pointer' : 'bg-surface-muted hover:bg-surface-container cursor-pointer'
                         }`}
                       >
                         <div className="flex items-center gap-space-md">
@@ -679,9 +681,9 @@ export default function Round2Page() {
 
                       {/* Tier 3: 4 Coins (Selected Max Bid) */}
                       <div
-                        onClick={() => setSelectedBid(4)}
-                        className={`bid-card cursor-pointer p-space-md rounded-xl transition-all flex items-center justify-between shadow-lg relative overflow-hidden border-2 border-ink-primary ${
-                          selectedBid === 4 ? 'selected-bid bg-round-2-orange/15 ring-2 ring-round-2-orange shadow-lg' : 'bg-surface-muted hover:bg-surface-container'
+                        onClick={() => !isAuctionClosed && setSelectedBid(4)}
+                        className={`bid-card p-space-md rounded-xl transition-all flex items-center justify-between shadow-lg relative overflow-hidden border-2 border-ink-primary ${
+                          isAuctionClosed ? 'cursor-not-allowed bg-surface-muted' : selectedBid === 4 ? 'selected-bid bg-round-2-orange/15 ring-2 ring-round-2-orange shadow-lg cursor-pointer' : 'bg-surface-muted hover:bg-surface-container cursor-pointer'
                         }`}
                       >
                         <div className="absolute -right-4 -bottom-4 w-20 h-20 bg-round-2-orange/20 rounded-full blur-xl pointer-events-none"></div>

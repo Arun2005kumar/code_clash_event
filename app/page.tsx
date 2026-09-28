@@ -52,6 +52,22 @@ export default function HomePage() {
       return;
     }
 
+    // 0. Request browser fullscreen immediately inside the user submit gesture context
+    try {
+      const el = document.documentElement;
+      if (el.requestFullscreen) {
+        el.requestFullscreen().catch(() => {});
+      } else if ((el as any).webkitRequestFullscreen) {
+        (el as any).webkitRequestFullscreen();
+      } else if ((el as any).mozRequestFullScreen) {
+        (el as any).mozRequestFullScreen();
+      } else if ((el as any).msRequestFullscreen) {
+        (el as any).msRequestFullscreen();
+      }
+    } catch {
+      // Ignored - AntiCheatGuard will enforce fullscreen on test pages if blocked
+    }
+
     setLoading(true);
     setFeedbackMsg(`Connecting ${cleanTeamName} to Stage 01 Sprint... 🚀`);
 
@@ -66,6 +82,19 @@ export default function HomePage() {
         .maybeSingle();
 
       if (existingTeam) {
+        // Check if team is disqualified / locked out due to > 3 violations
+        const { count: vCount } = await supabase
+          .from('anti_cheat_violations')
+          .select('*', { count: 'exact', head: true })
+          .eq('team_id', existingTeam.id);
+
+        if (vCount && vCount > 3) {
+          toast.error('🚫 ACCESS DENIED: Your team is locked out for exceeding maximum anti-cheat violations (>3). Please contact the administrator.');
+          setLoading(false);
+          setFeedbackMsg('');
+          return;
+        }
+
         await supabase
           .from('teams')
           .update({
