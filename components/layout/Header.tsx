@@ -59,7 +59,7 @@ export default function Header({ activePath }: HeaderProps) {
             // Requirement 7: Auto-open Round 3 for participant users regardless of currently open page
             if (typeof window !== 'undefined' && session) {
               const currPath = window.location.pathname;
-              if (!currPath.startsWith('/admin') && !currPath.startsWith('/round3')) {
+              if (!currPath.startsWith('/admin') && !currPath.startsWith('/round3') && !currPath.startsWith('/scoreboard')) {
                 toast.info('🚀 Round 3 Activated! Redirecting to Heist Mission...', { id: 'r3-redirect' });
                 router.push('/round3');
               }

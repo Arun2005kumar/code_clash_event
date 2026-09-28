@@ -165,7 +165,6 @@ export default function Mission2HackerReceipt({ teamId, mission, attempt, onSucc
                 setErrorMsg('');
               }}
               disabled={isExpired || loading}
-              placeholder="Enter output (e.g. 0)..."
               className="w-full px-space-md py-space-md rounded-xl border-2 border-ink-primary bg-canvas-cream font-mono text-xl font-bold text-ink-primary placeholder:text-slate-400 focus:outline-none focus:ring-4 focus:ring-round-3-purple/20 shadow-[3px_3px_0px_#0F172A] disabled:opacity-50"
             />
           </div>
