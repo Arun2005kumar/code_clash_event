@@ -303,8 +303,8 @@ BEGIN
     RETURN;
   END IF;
 
-  IF v_question.status = 'resolved' THEN
-    RETURN QUERY SELECT FALSE, 'Bidding is closed for this resolved question.'::TEXT;
+  IF v_question.status IN ('resolved', 'locked', 'hammer_locked') THEN
+    RETURN QUERY SELECT FALSE, 'Bidding is locked for this lot.'::TEXT;
     RETURN;
   END IF;
 

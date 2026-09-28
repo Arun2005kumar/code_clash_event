@@ -172,25 +172,30 @@ export default function AdminAuctionPage() {
   const dropHammer = async (teamId: string) => {
     if (hammerDropped && !awaitingVerdict) { toast.error('Hammer already dropped.'); return; }
     const supabase = getSupabase();
-    if (currentQuestion?.id) {
-      await supabase.from('round2_questions').upsert({
-        id: currentQuestion.id,
-        question_number: currentQuestion.question_number || 1,
-        question_text: currentQuestion.question_text || '',
-        option_a: (currentQuestion as any).option_a || '',
-        option_b: (currentQuestion as any).option_b || '',
-        option_c: (currentQuestion as any).option_c || '',
-        option_d: (currentQuestion as any).option_d || '',
-        correct_option: (currentQuestion as any).correct_option || 'A',
-        status: 'locked',
-      });
-      await supabase.rpc('lock_hammer_for_question', { p_question_id: currentQuestion.id });
-    }
+    const qNum = currentQuestion?.question_number || 1;
+    const targetQId = (currentQuestion?.id && currentQuestion.id.includes('-'))
+      ? currentQuestion.id
+      : `00000002-0000-0000-0000-00000000000${qNum}`;
+
+    await supabase.from('round2_questions').upsert({
+      id: targetQId,
+      question_number: qNum,
+      question_text: currentQuestion?.question_text || '',
+      option_a: (currentQuestion as any)?.option_a || '',
+      option_b: (currentQuestion as any)?.option_b || '',
+      option_c: (currentQuestion as any)?.option_c || '',
+      option_d: (currentQuestion as any)?.option_d || '',
+      correct_option: (currentQuestion as any)?.correct_option || 'A',
+      status: 'locked',
+    });
+    await supabase.rpc('lock_hammer_for_question', { p_question_id: targetQId });
+    await supabase.from('competition_settings').update({ updated_at: new Date().toISOString() }).neq('id', '00000000-0000-0000-0000-000000000000');
+
     setPendingWinnerId(teamId);
     setAwaitingVerdict(true);
     setHammerDropped(true);
     const winner = bids.find(b => b.team_id === teamId);
-    toast.info(`Winner selected: ${winner?.team_name}. Bidding is now LOCKED for all teams. Choose CORRECT or WRONG.`);
+    toast.info(`Hammer locked! ${winner?.team_name || 'Team'} selected. Bidding menu is now LOCKED for all teams. Declare verdict (CORRECT or WRONG).`);
     loadData();
   };
 

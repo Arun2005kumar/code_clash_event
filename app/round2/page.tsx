@@ -197,6 +197,21 @@ export default function Round2Page() {
     }
 
     if (q) {
+      // Check database status for locked or hammer_locked questions (handles fallback questions & view sync)
+      const { data: dbQList } = await supabase
+        .from('round2_questions')
+        .select('status')
+        .or(`id.eq.${q.id},question_number.eq.${qNum}`);
+
+      if (dbQList && dbQList.length > 0) {
+        const lockedRow = dbQList.find(r => r.status === 'locked' || r.status === 'hammer_locked' || r.status === 'resolved');
+        if (lockedRow) {
+          q = { ...q, status: lockedRow.status };
+        } else if (dbQList[0]?.status) {
+          q = { ...q, status: dbQList[0].status };
+        }
+      }
+
       // Reset bid state when question changes (detect by both id and question_number)
       const newQuestionKey = `${q.question_number}-${q.id}`;
       if (prevQuestionId.current && prevQuestionId.current !== newQuestionKey) {
@@ -210,6 +225,8 @@ export default function Round2Page() {
       prevQuestionId.current = newQuestionKey;
       setCurrentQuestion(q);
 
+      const isLockedOrResolved = q.status === 'locked' || q.status === 'hammer_locked' || q.status === 'resolved';
+
       // Check existing bid for team
       const { data: existingBid } = await supabase
         .from('round2_bids')
@@ -222,12 +239,12 @@ export default function Round2Page() {
         setMyBid(existingBid);
         setSelectedOption(existingBid.selected_option as Option);
         setSelectedBid(existingBid.bid_amount as BidAmount);
-        setBidStatus(q.status === 'resolved' ? 'resolved' : 'placed');
+        setBidStatus(isLockedOrResolved ? 'resolved' : 'placed');
       } else {
         setMyBid(null);
         setSelectedOption(null);
         setSelectedBid(4);
-        setBidStatus('idle');
+        setBidStatus(isLockedOrResolved ? 'resolved' : 'idle');
       }
 
       // Fetch all bids for active question (Live Floor Stream)
@@ -514,6 +531,15 @@ export default function Round2Page() {
                       <div className="inline-block px-space-sm py-0.5 bg-round-2-amber/20 text-on-secondary-container rounded font-label-sticker text-label-sticker border border-ink-primary">
                         CATEGORY: CORE DATA STRUCTURES
                       </div>
+                      {isHammerLocked && (
+                        <div className="p-space-md bg-round-2-orange/15 border-2 border-round-2-orange text-round-2-orange rounded-xl flex items-center gap-space-sm font-bold shadow-md animate-pulse">
+                          <span className="material-symbols-outlined text-[28px]">gavel</span>
+                          <div>
+                            <p className="font-headline-sm text-headline-sm uppercase font-black">🔨 HAMMER LOCKED BY AUCTIONEER</p>
+                            <p className="font-body-sm text-body-sm opacity-90">Bidding, coin wagering, and option selection are now strictly DISABLED for all teams.</p>
+                          </div>
+                        </div>
+                      )}
                       <FormattedQuestion
                         text={currentQuestion?.question_text || 'Which data structure strictly follows the First-In, First-Out (FIFO) principle?'}
                         titleClassName="font-headline-lg text-headline-lg text-ink-primary font-black leading-tight"
@@ -540,7 +566,7 @@ export default function Round2Page() {
                             transition={{ type: 'spring', stiffness: 400, damping: 25 }}
                             className={`answer-card text-left p-space-md rounded-xl transition-colors flex items-center justify-between group border-2 border-ink-primary ${
                               isAuctionClosed
-                                ? 'opacity-60 cursor-not-allowed bg-surface-muted'
+                                ? 'opacity-60 cursor-not-allowed bg-surface-muted pointer-events-none'
                                 : isSelected
                                 ? 'bg-round-1-blue/15 ring-2 ring-round-1-blue shadow-[4px_4px_0px_#0F172A] cursor-pointer'
                                 : 'bg-surface-muted hover:bg-surface-container shadow-sm cursor-pointer'
@@ -709,7 +735,7 @@ export default function Round2Page() {
                     <button
                       className={`w-full py-space-md px-space-lg rounded-xl font-headline-sm text-headline-sm font-black tracking-wide transition-all flex items-center justify-center gap-space-sm shadow-xl group border-2 border-ink-primary ${
                         isAuctionClosed
-                          ? 'bg-ink-secondary text-on-primary opacity-70 cursor-not-allowed'
+                          ? 'bg-ink-secondary text-on-primary opacity-70 cursor-not-allowed pointer-events-none'
                           : bidStatus === 'placing'
                           ? 'bg-round-2-orange/70 text-on-primary cursor-wait'
                           : 'bg-round-2-orange hover:bg-round-2-orange/90 active:scale-[0.98] text-on-primary cursor-pointer'
