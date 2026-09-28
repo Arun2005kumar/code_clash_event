@@ -191,6 +191,14 @@ export default function AdminAuctionPage() {
     await supabase.rpc('lock_hammer_for_question', { p_question_id: targetQId });
     await supabase.from('competition_settings').update({ updated_at: new Date().toISOString() }).neq('id', '00000000-0000-0000-0000-000000000000');
 
+    // Broadcast instant hammer lock event over WebSocket channel
+    const channel = supabase.channel('round2-global');
+    await channel.send({
+      type: 'broadcast',
+      event: 'hammer_locked',
+      payload: { question_number: qNum, locked: true, winner_team_id: teamId },
+    });
+
     setPendingWinnerId(teamId);
     setAwaitingVerdict(true);
     setHammerDropped(true);
@@ -278,6 +286,14 @@ export default function AdminAuctionPage() {
     const supabase = getSupabase();
     const { error } = await supabase.rpc('next_round2_question', { p_target_question: nextQNum });
     if (error) { toast.error('Failed: ' + error.message); return; }
+    
+    const channel = supabase.channel('round2-global');
+    await channel.send({
+      type: 'broadcast',
+      event: 'question_changed',
+      payload: { question_number: nextQNum },
+    });
+
     setHammerDropped(false); setAwaitingVerdict(false); setPendingWinnerId(null); setStatusMsg('');
     toast.success(`Switched to Q${nextQNum}`);
     loadData();

@@ -111,6 +111,7 @@ export default function Round2Page() {
   const [bidStatus, setBidStatus] = useState<BidStatus>('idle');
   const [myBid, setMyBid] = useState<Round2Bid | null>(null);
   const [allBids, setAllBids] = useState<(Round2Bid & { team_name?: string })[]>([]);
+  const [broadcastHammerLocked, setBroadcastHammerLocked] = useState<boolean>(false);
   const [teamLeaderboard, setTeamLeaderboard] = useState<TeamLeaderboardRow[]>([]);
   const [myResult, setMyResult] = useState<Round2Result>(null);
   const [loading, setLoading] = useState(true);
@@ -207,6 +208,7 @@ export default function Round2Page() {
         const lockedRow = dbQList.find(r => r.status === 'locked' || r.status === 'hammer_locked' || r.status === 'resolved');
         if (lockedRow) {
           q = { ...q, status: lockedRow.status };
+          setBroadcastHammerLocked(true);
         } else if (dbQList[0]?.status) {
           q = { ...q, status: dbQList[0].status };
         }
@@ -220,12 +222,16 @@ export default function Round2Page() {
         setSelectedOption(null);
         setSelectedBid(4);
         setBidStatus('idle');
+        setBroadcastHammerLocked(false);
         toast.info(`📢 New lot opened: Question ${q.question_number}`);
       }
       prevQuestionId.current = newQuestionKey;
       setCurrentQuestion(q);
 
       const isLockedOrResolved = q.status === 'locked' || q.status === 'hammer_locked' || q.status === 'resolved';
+      if (isLockedOrResolved) {
+        setBroadcastHammerLocked(true);
+      }
 
       // Check existing bid for team
       const { data: existingBid } = await supabase
@@ -317,13 +323,21 @@ export default function Round2Page() {
     loadState();
   }, [session, loadState]);
 
-  // Realtime subscriptions
+  // Realtime & Broadcast subscriptions
   useEffect(() => {
     if (!session) return;
     const supabase = getSupabase();
 
     const channel = supabase
-      .channel('round2-team-live')
+      .channel('round2-global')
+      .on('broadcast', { event: 'hammer_locked' }, (payload) => {
+        setBroadcastHammerLocked(true);
+        toast.warning('🔨 HAMMER LOCKED BY AUCTIONEER! Bidding and option changes are now disabled for all teams.');
+      })
+      .on('broadcast', { event: 'question_changed' }, () => {
+        setBroadcastHammerLocked(false);
+        loadState();
+      })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'round2_team_state' }, () => { loadState(); })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'competition_settings' }, () => { loadState(); })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'round2_questions' }, () => { loadState(); })
@@ -334,8 +348,7 @@ export default function Round2Page() {
     return () => { supabase.removeChannel(channel); };
   }, [session, loadState, getSupabase]);
 
-
-  const isHammerLocked = currentQuestion?.status === 'locked' || currentQuestion?.status === 'hammer_locked';
+  const isHammerLocked = broadcastHammerLocked || currentQuestion?.status === 'locked' || currentQuestion?.status === 'hammer_locked';
   const isAuctionClosed = currentQuestion?.status === 'resolved' || isHammerLocked;
 
   const handlePlaceBid = async (increment: number) => {
