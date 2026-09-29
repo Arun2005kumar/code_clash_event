@@ -51,16 +51,16 @@ export default function ScoreReviewManager() {
         console.warn('sync_team_calculated_scores RPC warning:', e);
       }
 
-      // 1. Fetch competition settings
+      // 1. Fetch competition settings (safely using select('*') or fallback)
       const { data: settings } = await supabase
         .from('competition_settings')
-        .select('results_published, round3_results_published, published_at')
+        .select('*')
         .limit(1)
         .maybeSingle();
 
-      const published = settings?.results_published ?? settings?.round3_results_published ?? false;
+      const published = (settings as any)?.results_published ?? (settings as any)?.round3_results_published ?? false;
       setIsPublished(published);
-      setPublishedAt(settings?.published_at ?? null);
+      setPublishedAt((settings as any)?.published_at ?? null);
 
       // 2. Fetch teams
       const { data: teams } = await supabase.from('teams').select('id, team_name, leader_name, leader_reg_no');

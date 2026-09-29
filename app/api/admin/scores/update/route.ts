@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
     try {
       const { data: settings } = await supabase
         .from('competition_settings')
-        .select('results_published, round3_results_published')
+        .select('*')
         .limit(1)
         .maybeSingle();
 
