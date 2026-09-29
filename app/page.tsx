@@ -1,8 +1,8 @@
 'use client';
 
-// app/page.tsx — Stitch Design Homepage & Real-time Team Entry
+// app/page.tsx — Stitch Design Homepage & Real-time Team Entry with Superhero Cinematic Assembly
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/layout/Header';
 import { toast } from 'sonner';
@@ -10,6 +10,10 @@ import { createClient } from '@/lib/supabase/client';
 import { setTeamSession, getTeamSession } from '@/lib/auth/session';
 import BloomTransition from '@/components/animations/BloomTransition';
 import { findOfficialTeam } from '@/lib/teams';
+import ParticleNetworkCanvas from '@/components/home/ParticleNetworkCanvas';
+import FloatingCodeBadges from '@/components/home/FloatingCodeBadges';
+import HeroLogoAssembly from '@/components/home/HeroLogoAssembly';
+import CinematicTerminal from '@/components/home/CinematicTerminal';
 
 export default function HomePage() {
   const router = useRouter();
@@ -19,6 +23,21 @@ export default function HomePage() {
   const [loading, setLoading] = useState(false);
   const [bloom, setBloom] = useState(false);
   const [feedbackMsg, setFeedbackMsg] = useState('');
+
+  // Mouse Parallax & 3D Tilt Coordinates (Scoped strictly to Home Page)
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0, normX: 0, normY: 0 });
+
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (typeof window === 'undefined') return;
+    const normX = (e.clientX / window.innerWidth) - 0.5;
+    const normY = (e.clientY / window.innerHeight) - 0.5;
+    setMousePos({ x: e.clientX, y: e.clientY, normX, normY });
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, [handleMouseMove]);
 
   // Redirect already-logged-in teams to the active round
   useEffect(() => {
@@ -63,7 +82,7 @@ export default function HomePage() {
       return;
     }
 
-    // 0. Request browser fullscreen immediately inside the user submit gesture context
+    // Request browser fullscreen immediately inside the user submit gesture context
     try {
       const el = document.documentElement;
       if (el.requestFullscreen) {
@@ -76,7 +95,7 @@ export default function HomePage() {
         (el as any).msRequestFullscreen();
       }
     } catch {
-      // Ignored - AntiCheatGuard will enforce fullscreen on test pages if blocked
+      // Ignored
     }
 
     setLoading(true);
@@ -210,95 +229,28 @@ export default function HomePage() {
   };
 
   return (
-    <div className="bg-canvas-cream font-body-md text-body-md text-ink-primary min-h-screen flex flex-col">
+    <div className="bg-canvas-cream font-body-md text-body-md text-ink-primary min-h-screen flex flex-col relative overflow-hidden">
       <Header />
 
-      <main className="w-full pt-20 bg-canvas-cream flex-grow">
-        <div className="flex flex-col w-full">
+      <main className="w-full pt-20 bg-canvas-cream flex-grow relative">
+        
+        {/* Lightweight Canvas Particle System */}
+        <ParticleNetworkCanvas mouseX={mousePos.x} mouseY={mousePos.y} />
+
+        {/* Floating Parallax Code Badges */}
+        <FloatingCodeBadges parallaxX={mousePos.normX} parallaxY={mousePos.normY} />
+
+        <div className="flex flex-col w-full relative z-10">
           
           {/* Main Hero Centered Section */}
           <div className="relative w-full max-w-[1440px] mx-auto px-margin-mobile lg:px-margin py-space-lg lg:py-space-xl overflow-hidden">
             
-            {/* Ambient Floating Neo-Brutalist Doodles / Particles */}
-            <div className="absolute top-6 left-10 select-none pointer-events-none transform -rotate-12 hidden md:block z-0">
-              <span className="inline-block px-space-sm py-1 bg-round-2-amber text-ink-primary font-label-sticker text-label-sticker rounded-lg shadow-md border-0">
-                {'{ }'} syntax_valid
-              </span>
-            </div>
-            <div className="absolute top-24 right-16 select-none pointer-events-none transform rotate-6 hidden md:block z-0">
-              <span className="inline-block px-space-sm py-1 bg-round-3-pink text-surface-card font-label-sticker text-label-sticker rounded-lg shadow-md">
-                {'</>'} 0101_READY
-              </span>
-            </div>
-            <div className="absolute bottom-40 left-8 select-none pointer-events-none transform rotate-12 hidden lg:block z-0">
-              <span className="inline-block px-space-sm py-1 bg-surface-container-highest text-round-1-blue font-label-sticker text-label-sticker rounded-lg shadow-sm">
-                console.log(&quot;LETS GO!&quot;);
-              </span>
-            </div>
-            <div className="absolute top-1/2 right-6 select-none pointer-events-none transform -rotate-6 hidden lg:block z-0">
-              <span className="text-display-xl font-display-xl text-currency-gold opacity-90 drop-shadow-sm">★</span>
-            </div>
-
-            {/* Main Content Box */}
+            {/* Superhero Assembly Logo Cockpit */}
             <div className="flex flex-col items-center text-center max-w-4xl mx-auto relative z-10">
-              
-              {/* Cheerful Badge */}
-              <div className="inline-flex items-center gap-space-xs px-space-md py-1.5 bg-currency-gold/20 text-on-secondary-container rounded-full shadow-sm mb-space-md transform hover:scale-105 transition-transform duration-200">
-                <img src="/logo.png" alt="Code Clash Logo" className="w-6 h-6 object-contain" />
-                <span className="font-label-ticker text-label-ticker uppercase tracking-wider text-ink-primary font-extrabold">CODE CLASH PRESENTS</span>
-              </div>
+              <HeroLogoAssembly parallaxX={mousePos.normX} parallaxY={mousePos.normY} />
 
-              {/* Main Heading & Punchy Tagline */}
-              <div className="flex flex-col items-center justify-center gap-2 mb-space-sm">
-                <img src="/logo.png" alt="Code Clash Official Logo" className="w-32 h-32 sm:w-44 sm:h-44 object-contain drop-shadow-[4px_4px_0px_#0F172A] hover:scale-105 transition-transform" />
-                <h1 className="font-display-xl text-display-xl text-ink-primary tracking-tight">
-                  CODE{' '}
-                  <span className="relative inline-block text-primary-container">
-                    CLASH
-                    <svg className="absolute -bottom-2 left-0 w-full h-3 text-secondary-container" fill="none" preserveAspectRatio="none" viewBox="0 0 200 12" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M3 9C45 3 155 3 197 9" stroke="currentColor" strokeLinecap="round" strokeWidth="6"></path>
-                    </svg>
-                  </span>
-                </h1>
-              </div>
-              <p className="font-headline-md text-headline-md text-ink-secondary mt-space-xs max-w-2xl">
-                Three rounds. One team. Zero excuses.
-              </p>
-
-              {/* Visual Terminal & Sticker Pill Hero Element */}
-              <div className="w-full max-w-xl mt-space-lg mb-space-xl relative">
-                <div className="bg-surface-card rounded-xl p-space-md shadow-xl text-left transform -rotate-1 hover:rotate-0 transition-transform duration-300 border-2 border-ink-primary">
-                  {/* Terminal Header */}
-                  <div className="flex items-center justify-between pb-space-sm mb-space-sm bg-surface-muted/60 px-space-sm py-1 rounded-lg">
-                    <div className="flex items-center gap-1.5">
-                      <span className="w-3 h-3 rounded-full bg-status-wrong inline-block"></span>
-                      <span className="w-3 h-3 rounded-full bg-currency-gold inline-block"></span>
-                      <span className="w-3 h-3 rounded-full bg-status-correct inline-block"></span>
-                    </div>
-                    <span className="font-label-code text-label-code text-ink-secondary">terminal://arena_v2.5.sh</span>
-                    <span className="material-symbols-outlined text-ink-secondary text-[16px]">terminal</span>
-                  </div>
-                  {/* Terminal Body */}
-                  <div className="font-label-code text-label-code text-ink-primary space-y-1">
-                    <p><span className="text-round-1-blue font-bold">visitor@hack-box</span>:<span className="text-round-3-purple">~</span>$ ./init_arena --squad-mode</p>
-                    <p className="text-status-correct">✔ Loaded 3 High-Octane Coding Trials</p>
-                    <p className="text-round-2-orange font-bold">⚡ Arena server: STABLE | 142 Teams in queue</p>
-                    <p className="text-ink-secondary flex items-center gap-1">
-                      <span>Ready for squad authentication</span>
-                      <span className="w-2 h-4 bg-primary inline-block animate-pulse"></span>
-                    </p>
-                  </div>
-                </div>
-
-                {/* Quirky "NO BUGS ALLOWED*" Sticker */}
-                <div className="absolute -bottom-5 -right-3 sm:-right-8 bg-round-2-amber text-ink-primary px-space-md py-1.5 rounded-lg shadow-lg transform rotate-3 hover:scale-105 transition-transform duration-200 border-2 border-ink-primary z-10">
-                  <div className="flex items-center gap-1 font-label-sticker text-label-sticker font-extrabold uppercase">
-                    <span className="material-symbols-outlined text-[16px]">pest_control</span>
-                    <span>NO BUGS ALLOWED*</span>
-                  </div>
-                  <span className="block text-[9px] font-body-sm leading-tight text-ink-primary/80 italic font-semibold">*We can&apos;t actually guarantee that.</span>
-                </div>
-              </div>
+              {/* 3D Tilt Mission Console Terminal */}
+              <CinematicTerminal tiltX={mousePos.normX} tiltY={mousePos.normY} />
 
               {/* Centered Squad Login Card */}
               <div className="w-full max-w-md bg-surface-card rounded-xl p-space-lg shadow-xl relative text-left border-2 border-ink-primary" id="loginForm">
@@ -591,7 +543,7 @@ export default function HomePage() {
         </div>
       </main>
 
-      <footer className="w-full bg-surface-muted border-t-2 border-ink-primary py-space-lg">
+      <footer className="w-full bg-surface-muted border-t-2 border-ink-primary py-space-lg relative z-10">
         <div className="max-w-[1440px] mx-auto px-margin-mobile lg:px-margin flex flex-col md:flex-row items-center justify-between gap-space-md">
           <div className="flex flex-col sm:flex-row items-center gap-space-sm text-center sm:text-left">
             <p className="font-headline-sm text-headline-sm text-ink-primary">Think Fast. Code Smart. Bid Smarter.</p>
@@ -611,3 +563,4 @@ export default function HomePage() {
     </div>
   );
 }
+
