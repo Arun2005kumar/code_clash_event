@@ -138,6 +138,7 @@ export interface CompetitionSettings {
   show_round1_explanations: boolean;
   round3_results_published: boolean;
   results_published?: boolean;
+  event_ended?: boolean;
   published_at?: string;
   updated_at: string;
 }

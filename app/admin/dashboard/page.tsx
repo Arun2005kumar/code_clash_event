@@ -323,6 +323,52 @@ export default function AdminDashboardPage() {
                 <span className={`absolute top-1 left-1 w-5 h-5 rounded-full bg-ink-primary transition-transform ${settings.show_round1_explanations ? 'translate-x-6 bg-white' : 'translate-x-0'}`} />
               </button>
             </div>
+
+            {/* Thanks for Attending / Event Conclusion Toggle */}
+            <div className="flex items-center justify-between p-space-md bg-gradient-to-br from-currency-gold/20 via-round-2-orange/10 to-round-3-purple/20 rounded-xl border-2 border-ink-primary shadow-[3px_3px_0px_#0F172A]">
+              <div className="flex flex-col">
+                <span className="font-headline-sm text-headline-sm font-black text-ink-primary flex items-center gap-1.5">
+                  🎉 Thanks Page
+                </span>
+                <span className="font-body-sm text-body-sm text-ink-secondary font-medium">Show Thanks for Attending page to ALL participant screens live</span>
+                <span className={`font-label-sticker text-[10px] font-bold uppercase mt-1 ${settings.event_ended || settings.current_round === 99 ? 'text-currency-gold font-black' : 'text-ink-secondary'}`}>
+                  ● {settings.event_ended || settings.current_round === 99 ? '🎉 EVENT CONCLUDED (ACTIVE)' : 'DISABLED (NORMAL EVENT MODE)'}
+                </span>
+              </div>
+              <button
+                onClick={async () => {
+                  const isEnded = !(settings.event_ended || settings.current_round === 99);
+                  setSettingsLoading(true);
+                  const supabase = createClient();
+                  const payload: any = {
+                    event_ended: isEnded,
+                    current_round: isEnded ? 99 : 1,
+                    updated_at: new Date().toISOString()
+                  };
+                  setSettings(prev => prev ? { ...prev, ...payload } : prev);
+                  if (settings?.id) {
+                    const { error } = await supabase
+                      .from('competition_settings')
+                      .update(payload)
+                      .eq('id', settings.id);
+                    if (error) {
+                      await supabase
+                        .from('competition_settings')
+                        .update({ current_round: isEnded ? 99 : 1, updated_at: new Date().toISOString() })
+                        .eq('id', settings.id);
+                    }
+                  }
+                  toast.success(isEnded ? '🎉 Thanks for Attending page broadcasted live to ALL participants!' : 'Thanks for Attending mode disabled.');
+                  setSettingsLoading(false);
+                }}
+                disabled={settingsLoading}
+                className={`relative w-14 h-8 rounded-full transition-colors cursor-pointer border-2 border-ink-primary shadow-inner shrink-0 ${
+                  settings.event_ended || settings.current_round === 99 ? 'bg-currency-gold' : 'bg-surface-card'
+                }`}
+              >
+                <span className={`absolute top-1 left-1 w-5 h-5 rounded-full bg-ink-primary transition-transform ${settings.event_ended || settings.current_round === 99 ? 'translate-x-6 bg-white' : 'translate-x-0'}`} />
+              </button>
+            </div>
           </div>
 
           {/* Round 2 Question Selector */}

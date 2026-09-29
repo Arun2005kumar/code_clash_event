@@ -5,6 +5,7 @@ import { Analytics } from '@vercel/analytics/next';
 import CustomCursor from '@/components/animations/CustomCursor';
 import PageTransition from '@/components/animations/PageTransition';
 import TeamPresenceHeartbeat from '@/components/layout/TeamPresenceHeartbeat';
+import EventEndedGuard from '@/components/layout/EventEndedGuard';
 
 export const metadata: Metadata = {
   title: 'Code Clash ⚡',
@@ -39,6 +40,7 @@ export default function RootLayout({
       <body className="bg-background font-body-md text-on-surface min-h-screen flex flex-col selection:bg-secondary-container selection:text-on-surface">
         <CustomCursor />
         <TeamPresenceHeartbeat />
+        <EventEndedGuard />
         <PageTransition>{children}</PageTransition>
         <Analytics />
         <Toaster

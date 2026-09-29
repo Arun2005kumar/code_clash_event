@@ -3,11 +3,11 @@
 import { useEffect, useRef } from 'react';
 
 interface ParticleNetworkCanvasProps {
-  mouseX: number;
-  mouseY: number;
+  mouseX?: number;
+  mouseY?: number;
 }
 
-export default function ParticleNetworkCanvas({ mouseX, mouseY }: ParticleNetworkCanvasProps) {
+export default function ParticleNetworkCanvas({ mouseX = 0, mouseY = 0 }: ParticleNetworkCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
