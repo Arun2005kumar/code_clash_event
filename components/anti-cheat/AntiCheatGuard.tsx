@@ -13,6 +13,7 @@ interface AntiCheatGuardProps {
   teamId: string
   teamName: string
   roundName: string
+  disabled?: boolean
 }
 
 type ViolationType =
@@ -35,7 +36,10 @@ export default function AntiCheatGuard({
   teamId,
   teamName,
   roundName,
+  disabled = false,
 }: AntiCheatGuardProps) {
+  const isGuardDisabled = disabled || roundName.toLowerCase().includes('result')
+
   const [overlayVisible, setOverlayVisible] = useState(false)
   const [overlayType, setOverlayType] = useState<ViolationType>('fullscreen_exit')
   const [violationCount, setViolationCount] = useState(0)
@@ -122,7 +126,7 @@ export default function AntiCheatGuard({
 
   const triggerViolation = useCallback(
     async (type: ViolationType) => {
-      if (!guardMountedRef.current) return
+      if (isGuardDisabled || !guardMountedRef.current) return
 
       // Deduplicate rapid repeat signals
       if (!antiCheatManager.shouldLogViolation(type)) return
@@ -152,11 +156,11 @@ export default function AntiCheatGuard({
         startFullscreenCountdown()
       }
     },
-    [teamId, roundName, startFullscreenCountdown]
+    [isGuardDisabled, teamId, roundName, startFullscreenCountdown]
   )
 
   const handleFullscreenChange = useCallback(() => {
-    if (!guardMountedRef.current) return
+    if (isGuardDisabled || !guardMountedRef.current) return
 
     const nowFullscreen = isCurrentlyFullscreen()
     setIsFullscreen(nowFullscreen)
@@ -169,7 +173,7 @@ export default function AntiCheatGuard({
     } else if (fullscreenSupported) {
       triggerViolation('fullscreen_exit')
     }
-  }, [isCurrentlyFullscreen, overlayType, fullscreenSupported, triggerViolation])
+  }, [isGuardDisabled, isCurrentlyFullscreen, overlayType, fullscreenSupported, triggerViolation])
 
   const dismissOverlay = useCallback(() => {
     if (overlayType === 'fullscreen_exit') return // Cannot dismiss fullscreen overlay manually
@@ -552,6 +556,10 @@ export default function AntiCheatGuard({
       if (existing) existing.remove()
     }
   }, [])
+
+  if (isGuardDisabled) {
+    return <>{children}</>
+  }
 
   return (
     <>

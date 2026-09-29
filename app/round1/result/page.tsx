@@ -148,7 +148,7 @@ export default function Round1ResultPage() {
   const grade = percentage >= 90 ? '🏆' : percentage >= 70 ? '⭐' : percentage >= 50 ? '👍' : '😅';
 
   return (
-    <AntiCheatGuard teamId={session?.teamId || ''} teamName={session?.teamName || ''} roundName="Round 1 Result">
+    <AntiCheatGuard teamId={session?.teamId || ''} teamName={session?.teamName || ''} roundName="Round 1 Result" disabled={true}>
       <div className="min-h-screen bg-dot-grid font-body-md text-ink-primary flex flex-col">
         <Header />
 

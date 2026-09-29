@@ -260,7 +260,7 @@ export default function Round1Page() {
   const coveragePercent = Math.round((answeredSet.size / questions.length) * 100);
 
   return (
-    <AntiCheatGuard teamId={session.teamId} teamName={session.teamName} roundName="Round 1">
+    <AntiCheatGuard teamId={session.teamId} teamName={session.teamName} roundName="Round 1" disabled={submitting || submitted}>
       <ConfettiBurst trigger={confetti} />
       <div className="bg-canvas-cream font-body-md text-body-md text-ink-primary min-h-screen flex flex-col selection:bg-round-2-orange selection:text-ink-primary">
         <Header />
