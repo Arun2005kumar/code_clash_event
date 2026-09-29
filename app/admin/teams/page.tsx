@@ -199,19 +199,19 @@ export default function AdminTeamsPage() {
       {/* Table Container Card */}
       <div className="bg-white border-1.5 border-slate-200 rounded-2xl overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm border-collapse">
+          <table className="w-full text-left text-xs sm:text-sm border-collapse">
             <thead className="bg-slate-50/80 border-b-2 border-slate-200">
               <tr>
-                <th className="px-6 py-3.5 text-[11px] font-extrabold tracking-wider text-slate-500 uppercase whitespace-nowrap">TEAM</th>
-                <th className="px-6 py-3.5 text-[11px] font-extrabold tracking-wider text-slate-500 uppercase whitespace-nowrap">LEADER</th>
-                <th className="px-6 py-3.5 text-[11px] font-extrabold tracking-wider text-slate-500 uppercase whitespace-nowrap">REG NO</th>
-                <th className="px-6 py-3.5 text-[11px] font-extrabold tracking-wider text-slate-500 uppercase whitespace-nowrap">LOGIN STATUS</th>
-                <th className="px-6 py-3.5 text-[11px] font-extrabold tracking-wider text-slate-500 uppercase whitespace-nowrap">R1 STATUS</th>
-                <th className="px-6 py-3.5 text-[11px] font-extrabold tracking-wider text-slate-500 uppercase whitespace-nowrap">R1 SCORE</th>
-                <th className="px-6 py-3.5 text-[11px] font-extrabold tracking-wider text-slate-500 uppercase whitespace-nowrap">R2 SCORE</th>
-                <th className="px-6 py-3.5 text-[11px] font-extrabold tracking-wider text-slate-500 uppercase whitespace-nowrap">COINS</th>
-                <th className="px-6 py-3.5 text-[11px] font-extrabold tracking-wider text-slate-500 uppercase whitespace-nowrap">LOCK / VIOLATIONS</th>
-                <th className="px-6 py-3.5 text-[11px] font-extrabold tracking-wider text-slate-500 uppercase whitespace-nowrap">ACTIONS</th>
+                <th className="px-3.5 py-3 text-[11px] font-extrabold tracking-wider text-slate-500 uppercase whitespace-nowrap">TEAM</th>
+                <th className="px-3.5 py-3 text-[11px] font-extrabold tracking-wider text-slate-500 uppercase whitespace-nowrap">LEADER</th>
+                <th className="px-3.5 py-3 text-[11px] font-extrabold tracking-wider text-slate-500 uppercase whitespace-nowrap">REG NO</th>
+                <th className="px-3.5 py-3 text-[11px] font-extrabold tracking-wider text-slate-500 uppercase whitespace-nowrap">LOGIN STATUS</th>
+                <th className="px-3.5 py-3 text-[11px] font-extrabold tracking-wider text-slate-500 uppercase whitespace-nowrap">R1 STATUS</th>
+                <th className="px-3.5 py-3 text-[11px] font-extrabold tracking-wider text-slate-500 uppercase whitespace-nowrap">R1 SCORE</th>
+                <th className="px-3.5 py-3 text-[11px] font-extrabold tracking-wider text-slate-500 uppercase whitespace-nowrap">R2 SCORE</th>
+                <th className="px-3.5 py-3 text-[11px] font-extrabold tracking-wider text-slate-500 uppercase whitespace-nowrap">COINS</th>
+                <th className="px-3.5 py-3 text-[11px] font-extrabold tracking-wider text-slate-500 uppercase whitespace-nowrap">STATUS / LOCK</th>
+                <th className="px-3.5 py-3 text-[11px] font-extrabold tracking-wider text-slate-500 uppercase whitespace-nowrap text-right">ACTIONS</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -219,7 +219,7 @@ export default function AdminTeamsPage() {
                 Array(5).fill(0).map((_, i) => (
                   <tr key={i}>
                     {Array(10).fill(0).map((_, j) => (
-                      <td key={j} className="px-6 py-4"><div className="skeleton h-4 w-full rounded-md" /></td>
+                      <td key={j} className="px-3.5 py-3"><div className="skeleton h-4 w-full rounded-md" /></td>
                     ))}
                   </tr>
                 ))
@@ -234,28 +234,28 @@ export default function AdminTeamsPage() {
               ) : filtered.map((team) => (
                 <tr
                   key={team.id}
-                  className={`hover:bg-slate-50/80 transition-colors border-b border-slate-100 ${team.is_locked ? 'bg-rose-50/30' : ''}`}
+                  className={`hover:bg-slate-50/80 transition-colors border-b border-slate-100 ${team.is_locked ? 'bg-rose-50/40' : ''}`}
                 >
-                  <td className="px-6 py-4 font-extrabold text-slate-900 whitespace-nowrap">
-                    {team.is_flagged && <span className="mr-1.5">⚠️</span>}
+                  <td className="px-3.5 py-3 font-extrabold text-slate-900 whitespace-nowrap">
+                    {team.is_flagged && <span className="mr-1">⚠️</span>}
                     {team.team_name}
                   </td>
-                  <td className="px-6 py-4 text-slate-700 font-medium whitespace-nowrap">{team.leader_name}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="font-mono text-xs font-semibold text-slate-600 bg-slate-100 border border-slate-200 px-2 py-1 rounded-md">
+                  <td className="px-3.5 py-3 text-slate-700 font-medium whitespace-nowrap">{team.leader_name}</td>
+                  <td className="px-3.5 py-3 whitespace-nowrap">
+                    <span className="font-mono text-xs font-semibold text-slate-600 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md">
                       {team.leader_reg_no}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${
+                  <td className="px-3.5 py-3 whitespace-nowrap">
+                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold ${
                       team.is_locked ? 'bg-rose-100 text-rose-700' : team.login_status ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'
                     }`}>
                       <span className={`w-1.5 h-1.5 rounded-full ${team.is_locked ? 'bg-rose-500' : team.login_status ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`} />
                       <span>{team.is_locked ? 'Locked' : team.login_status ? 'Online' : 'Offline'}</span>
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                  <td className="px-3.5 py-3 whitespace-nowrap">
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold ${
                       team.r1_status === 'submitted' || team.r1_status === 'auto_submitted'
                         ? 'bg-emerald-50 text-emerald-700'
                         : team.r1_status === 'in_progress'
@@ -269,41 +269,41 @@ export default function AdminTeamsPage() {
                         : 'Not started'}
                     </span>
                   </td>
-                  <td className="px-6 py-4 font-extrabold text-slate-900">{team.r1_score ?? '—'}</td>
-                  <td className="px-6 py-4 font-extrabold text-slate-900">{team.r2_score ?? '—'}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="inline-flex items-center gap-1.5 text-slate-900 font-extrabold">
-                      <span className="w-5 h-5 rounded-full bg-amber-400 text-amber-900 font-black text-[10px] flex items-center justify-center shadow-xs">
+                  <td className="px-3.5 py-3 font-extrabold text-slate-900">{team.r1_score ?? '—'}</td>
+                  <td className="px-3.5 py-3 font-extrabold text-slate-900">{team.r2_score ?? '—'}</td>
+                  <td className="px-3.5 py-3 whitespace-nowrap">
+                    <span className="inline-flex items-center gap-1 text-slate-900 font-extrabold">
+                      <span className="w-4 h-4 rounded-full bg-amber-400 text-amber-900 font-black text-[9px] flex items-center justify-center">
                         🪙
                       </span>
                       <span>{team.r2_coins ?? '—'}</span>
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`font-extrabold ${team.is_locked ? 'text-rose-600 font-black' : team.total_violations > 3 ? 'text-rose-600 font-black' : team.total_violations > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
-                      {team.is_locked ? '🔒 MANUAL LOCK' : team.total_violations > 3 ? '🚫 LOCKED (' + team.total_violations + ')' : team.total_violations > 0 ? '⚠️ ' + team.total_violations : 'CLEAN (0)'}
+                  <td className="px-3.5 py-3 whitespace-nowrap">
+                    <span className={`font-extrabold text-xs ${team.is_locked ? 'text-rose-600 font-black' : team.total_violations > 3 ? 'text-rose-600 font-black' : team.total_violations > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                      {team.is_locked ? '🔒 LOCKED' : team.total_violations > 3 ? '🚫 DISQUALIFIED (' + team.total_violations + ')' : team.total_violations > 0 ? '⚠️ ' + team.total_violations + ' V' : 'CLEAN (0)'}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap flex items-center gap-2">
+                  <td className="px-3.5 py-3 whitespace-nowrap flex items-center justify-end gap-1.5">
                     <button
                       onClick={() => handleToggleLockTeam(team.id, team.is_locked)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer shadow-xs ${
-                        team.is_locked ? 'bg-amber-600 hover:bg-amber-700 text-white' : 'bg-rose-600 hover:bg-rose-700 text-white'
+                      className={`px-2.5 py-1 rounded-lg text-xs font-extrabold transition-all cursor-pointer shadow-xs ${
+                        team.is_locked ? 'bg-amber-500 hover:bg-amber-600 text-white' : 'bg-rose-600 hover:bg-rose-700 text-white'
                       }`}
                     >
-                      {team.is_locked ? '🔓 Unlock Team' : '🔒 Lock Team'}
+                      {team.is_locked ? '🔓 Unlock' : '🔒 Lock'}
                     </button>
                     {team.total_violations > 0 && (
                       <button
                         onClick={() => handleResetViolations(team.id)}
-                        className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-colors cursor-pointer shadow-xs"
+                        className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-colors cursor-pointer shadow-xs"
                       >
-                        Reset Violations
+                        Reset V
                       </button>
                     )}
                     <button
                       onClick={() => resetTeamLogin(team.id)}
-                      className="px-3 py-1.5 rounded-lg border-1.5 border-slate-200 hover:border-rose-400 hover:bg-rose-50 hover:text-rose-600 text-xs font-bold text-slate-600 transition-colors cursor-pointer"
+                      className="px-2.5 py-1 rounded-lg border border-slate-300 hover:border-rose-400 hover:bg-rose-50 hover:text-rose-600 text-xs font-bold text-slate-700 transition-colors cursor-pointer"
                     >
                       Reset Login
                     </button>
