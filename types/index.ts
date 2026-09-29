@@ -13,6 +13,7 @@ export interface Team {
   leader_name: string;
   leader_reg_no: string;
   login_status: boolean;
+  last_seen_at?: string;
   created_at: string;
   updated_at: string;
 }

@@ -32,7 +32,7 @@ export default function AdminDashboardPage() {
       { count: r2Active },
       { data: settingsData },
       { data: violations },
-      { count: loggedIn },
+      { data: loggedInTeams },
       { count: vaultDone },
     ] = await Promise.all([
       supabase.from('teams').select('*', { count: 'exact', head: true }),
@@ -40,11 +40,18 @@ export default function AdminDashboardPage() {
       supabase.from('round2_team_state').select('*', { count: 'exact', head: true }).eq('status', 'active'),
       supabase.from('competition_settings').select('*').limit(1).maybeSingle(),
       supabase.rpc('get_violation_counts'),
-      supabase.from('teams').select('*', { count: 'exact', head: true }).eq('login_status', true),
+      supabase.from('teams').select('id, login_status, last_seen_at'),
       supabase.from('round3_team_state').select('*', { count: 'exact', head: true }).eq('vault_unlocked', true),
     ]);
 
     const flaggedCount = (violations as ViolationCount[])?.filter(v => v.is_flagged).length ?? 0;
+
+    const now = Date.now();
+    const activeLoggedInCount = ((loggedInTeams as any[]) ?? []).filter((t: any) => {
+      if (!t.login_status) return false;
+      if (!t.last_seen_at) return true;
+      return (now - new Date(t.last_seen_at).getTime()) < 25000;
+    }).length;
 
     let currentSettings = settingsData as CompetitionSettings | null;
     if (!currentSettings) {
@@ -62,7 +69,7 @@ export default function AdminDashboardPage() {
       round2Active: r2Active ?? 0,
       currentQuestion: currentSettings?.current_round2_question ?? 1,
       flaggedTeams: flaggedCount,
-      loggedInTeams: loggedIn ?? 0,
+      loggedInTeams: activeLoggedInCount,
       vaultUnlocked: vaultDone ?? 0,
     });
     setSettings(currentSettings);

@@ -1,8 +1,10 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from 'sonner';
+import { Analytics } from '@vercel/analytics/next';
 import CustomCursor from '@/components/animations/CustomCursor';
 import PageTransition from '@/components/animations/PageTransition';
+import TeamPresenceHeartbeat from '@/components/layout/TeamPresenceHeartbeat';
 
 export const metadata: Metadata = {
   title: 'Code Clash ⚡',
@@ -36,7 +38,9 @@ export default function RootLayout({
       </head>
       <body className="bg-background font-body-md text-on-surface min-h-screen flex flex-col selection:bg-secondary-container selection:text-on-surface">
         <CustomCursor />
+        <TeamPresenceHeartbeat />
         <PageTransition>{children}</PageTransition>
+        <Analytics />
         <Toaster
           position="top-right"
           richColors

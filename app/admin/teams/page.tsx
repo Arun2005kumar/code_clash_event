@@ -12,6 +12,7 @@ interface TeamRow {
   leader_name: string;
   leader_reg_no: string;
   login_status: boolean;
+  last_seen_at?: string;
   created_at: string;
   r1_status?: string;
   r1_score?: number;
@@ -57,6 +58,7 @@ export default function AdminTeamsPage() {
         }
       }
 
+      const now = Date.now();
       const rows: TeamRow[] = (rawTeams ?? []).map((t: any) => {
         const v = violationMap.get(t.id) as any;
         const submittedR1 = Array.isArray(t.round1_attempts)
@@ -64,12 +66,18 @@ export default function AdminTeamsPage() {
           : t.round1_attempts;
         const r2State = Array.isArray(t.round2_team_state) ? t.round2_team_state[0] : t.round2_team_state;
 
+        // Presence calculation: Online if login_status is true AND pinged within 25 seconds
+        const lastSeenMs = t.last_seen_at ? new Date(t.last_seen_at).getTime() : 0;
+        const isRecentlyActive = t.last_seen_at ? (now - lastSeenMs < 25000) : t.login_status;
+        const isOnline = Boolean(t.login_status && isRecentlyActive);
+
         return {
           id: t.id,
           team_name: t.team_name,
           leader_name: t.leader_name,
           leader_reg_no: t.leader_reg_no,
-          login_status: t.login_status,
+          login_status: isOnline,
+          last_seen_at: t.last_seen_at,
           created_at: t.created_at,
           r1_status: submittedR1?.status,
           r1_score: submittedR1?.score ?? 0,
