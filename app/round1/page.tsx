@@ -89,10 +89,28 @@ export default function Round1Page() {
         .eq('id', attempt.attempt_id)
         .maybeSingle();
 
-      if (dbAttempt?.started_at) {
-        saveStartTime(new Date(dbAttempt.started_at).getTime());
+      let startTimeMs = Date.now();
+      const rawStartedAt = (attempt as any).started_at || dbAttempt?.started_at;
+
+      if (rawStartedAt) {
+        const parsedStart = new Date(rawStartedAt).getTime();
+        const elapsedSecs = Math.floor((Date.now() - parsedStart) / 1000);
+
+        // If started_at is > 25 mins ago BUT attempt is in_progress & 0 answers saved locally/db,
+        // reset started_at to NOW() so participant gets full 25:00 timer!
+        if (elapsedSecs >= ROUND1_DURATION_SECONDS && Object.keys(getLocalAnswers()).length === 0) {
+          startTimeMs = Date.now();
+          saveStartTime(startTimeMs);
+          await supabase
+            .from('round1_attempts')
+            .update({ started_at: new Date(startTimeMs).toISOString() })
+            .eq('id', attempt.attempt_id);
+        } else {
+          startTimeMs = parsedStart;
+          saveStartTime(startTimeMs);
+        }
       } else {
-        saveStartTime(Date.now());
+        saveStartTime(startTimeMs);
       }
 
       const { data: qs, error: qError } = await supabase
