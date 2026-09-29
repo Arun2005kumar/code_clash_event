@@ -1,7 +1,7 @@
 -- ============================================================
 -- CODING CLUB CHALLENGE — Migration: 022_admin_score_management.sql
--- Add Editable Score Option, Score Override Audit Trail,
--- and Mandatory Pre-Publishing Workflow.
+-- Add Editable Score Option for Round 1, Round 2, Round 3, Bonus, and Final Override,
+-- Score Modification Audit Trail, and Mandatory Pre-Publishing Workflow.
 -- ============================================================
 
 -- 1. Create team_scores table to track calculated vs override scores
@@ -101,11 +101,15 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 GRANT EXECUTE ON FUNCTION sync_team_calculated_scores() TO postgres, anon, authenticated, service_role;
 
 
--- 5. RPC Function: Update team score override (Admin override action)
-CREATE OR REPLACE FUNCTION update_team_score_override(
+-- 5. RPC Function: Full Team Scores Update (R1, R2, R3, Bonus, and Override)
+CREATE OR REPLACE FUNCTION update_team_scores_full(
   p_team_id UUID,
-  p_override_score INTEGER,
-  p_reason TEXT DEFAULT 'Manual correction',
+  p_r1_score INTEGER DEFAULT 0,
+  p_r2_score INTEGER DEFAULT 0,
+  p_r3_score INTEGER DEFAULT 0,
+  p_bonus_adjustment INTEGER DEFAULT 0,
+  p_override_score INTEGER DEFAULT NULL,
+  p_reason TEXT DEFAULT 'Manual score edit',
   p_modified_by TEXT DEFAULT 'Admin'
 )
 RETURNS JSONB AS $$
@@ -113,6 +117,7 @@ DECLARE
   v_is_published BOOLEAN;
   v_prev_final_score INTEGER;
   v_team_name TEXT;
+  v_calc_score INTEGER;
   v_new_final_score INTEGER;
 BEGIN
   -- Check if results are locked (published)
@@ -125,39 +130,80 @@ BEGIN
     RAISE EXCEPTION 'Results are published. Scores are locked. Please unpublish results first to make edits.';
   END IF;
 
-  -- Ensure base score record exists
-  PERFORM sync_team_calculated_scores();
-
-  -- Get current team info and previous final score
   SELECT team_name INTO v_team_name FROM teams WHERE id = p_team_id;
   IF v_team_name IS NULL THEN
     RAISE EXCEPTION 'Team not found.';
   END IF;
 
   SELECT final_score INTO v_prev_final_score FROM team_scores WHERE team_id = p_team_id;
+  v_calc_score := p_r1_score + p_r2_score + p_r3_score + p_bonus_adjustment;
 
-  -- Apply manual override
-  UPDATE team_scores
-  SET
-    admin_override_score = p_override_score,
-    score_override_reason = p_reason,
-    score_modified_by = p_modified_by,
+  -- Apply score updates
+  INSERT INTO team_scores (
+    team_id, r1_score, r2_score, r3_score, bonus_adjustment,
+    calculated_score, admin_override_score, score_override_reason, score_modified_by, score_modified_at, updated_at
+  ) VALUES (
+    p_team_id, p_r1_score, p_r2_score, p_r3_score, p_bonus_adjustment,
+    v_calc_score, p_override_score, p_reason, p_modified_by, NOW(), NOW()
+  )
+  ON CONFLICT (team_id) DO UPDATE SET
+    r1_score = EXCLUDED.r1_score,
+    r2_score = EXCLUDED.r2_score,
+    r3_score = EXCLUDED.r3_score,
+    bonus_adjustment = EXCLUDED.bonus_adjustment,
+    calculated_score = EXCLUDED.calculated_score,
+    admin_override_score = EXCLUDED.admin_override_score,
+    score_override_reason = EXCLUDED.score_override_reason,
+    score_modified_by = EXCLUDED.score_modified_by,
     score_modified_at = NOW(),
-    updated_at = NOW()
-  WHERE team_id = p_team_id;
+    updated_at = NOW();
 
   SELECT final_score INTO v_new_final_score FROM team_scores WHERE team_id = p_team_id;
 
+  -- Sync individual round state tables
+  UPDATE round1_attempts SET score = p_r1_score WHERE team_id = p_team_id;
+  UPDATE round2_team_state SET score = p_r2_score WHERE team_id = p_team_id;
+  UPDATE round3_team_state SET score = p_r3_score WHERE team_id = p_team_id;
+
   -- Insert audit trail log
   INSERT INTO score_audit_logs (team_id, previous_score, new_score, modified_by, reason, created_at)
-  VALUES (p_team_id, v_prev_final_score, v_new_final_score, p_modified_by, p_reason, NOW());
+  VALUES (
+    p_team_id,
+    COALESCE(v_prev_final_score, 0),
+    v_new_final_score,
+    p_modified_by,
+    p_reason,
+    NOW()
+  );
 
   RETURN jsonb_build_object(
     'success', true,
     'team_id', p_team_id,
-    'previous_score', v_prev_final_score,
+    'previous_score', COALESCE(v_prev_final_score, 0),
     'new_score', v_new_final_score,
+    'calculated_score', v_calc_score,
     'admin_override', p_override_score
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+GRANT EXECUTE ON FUNCTION update_team_scores_full(UUID, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER, TEXT, TEXT) TO postgres, anon, authenticated, service_role;
+
+
+-- 6. Legacy wrapper RPC function to keep backward compatibility
+CREATE OR REPLACE FUNCTION update_team_score_override(
+  p_team_id UUID,
+  p_override_score INTEGER,
+  p_reason TEXT DEFAULT 'Manual correction',
+  p_modified_by TEXT DEFAULT 'Admin'
+)
+RETURNS JSONB AS $$
+BEGIN
+  RETURN update_team_scores_full(
+    p_team_id => p_team_id,
+    p_override_score => p_override_score,
+    p_reason => p_reason,
+    p_modified_by => p_modified_by
   );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -165,7 +211,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 GRANT EXECUTE ON FUNCTION update_team_score_override(UUID, INTEGER, TEXT, TEXT) TO postgres, anon, authenticated, service_role;
 
 
--- 6. RPC Function: Clear team score override (Revert to calculated score)
+-- 7. RPC Function: Clear team score override (Revert to calculated score)
 CREATE OR REPLACE FUNCTION clear_team_score_override(
   p_team_id UUID,
   p_modified_by TEXT DEFAULT 'Admin'
@@ -212,7 +258,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 GRANT EXECUTE ON FUNCTION clear_team_score_override(UUID, TEXT) TO postgres, anon, authenticated, service_role;
 
 
--- 7. RPC Function: Publish Results
+-- 8. RPC Function: Publish Results
 CREATE OR REPLACE FUNCTION publish_competition_results()
 RETURNS JSONB AS $$
 BEGIN
@@ -232,7 +278,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 GRANT EXECUTE ON FUNCTION publish_competition_results() TO postgres, anon, authenticated, service_role;
 
 
--- 8. RPC Function: Unpublish Results
+-- 9. RPC Function: Unpublish Results
 CREATE OR REPLACE FUNCTION unpublish_competition_results()
 RETURNS JSONB AS $$
 BEGIN
@@ -250,7 +296,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 GRANT EXECUTE ON FUNCTION unpublish_competition_results() TO postgres, anon, authenticated, service_role;
 
 
--- 9. Updated RPC Function: get_leaderboard using final_score logic
+-- 10. Updated RPC Function: get_leaderboard using final_score logic
 DROP FUNCTION IF EXISTS get_leaderboard() CASCADE;
 
 CREATE OR REPLACE FUNCTION get_leaderboard()
@@ -305,7 +351,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 GRANT EXECUTE ON FUNCTION get_leaderboard() TO postgres, anon, authenticated, service_role;
 
 
--- 10. Enable Supabase Realtime for team_scores and score_audit_logs
+-- 11. Enable Supabase Realtime for team_scores and score_audit_logs
 DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND tablename = 'team_scores') THEN
