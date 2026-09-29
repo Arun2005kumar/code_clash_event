@@ -81,19 +81,29 @@ export default function HeroLogoAssembly({ onLogoClick, parallaxX = 0, parallaxY
         </span>
       </div>
 
-      {/* ── MAIN LOGO COCKPIT WITH HOLOGRAPHIC RINGS & SYMBOLS ── */}
+      {/* ── MAIN LOGO COCKPIT WITH HOLOGRAPHIC RINGS, SPARKS & SYMBOLS ── */}
       <div className="relative flex items-center justify-center my-4 mb-10 sm:mb-12 group cursor-pointer" onClick={handleLogoClick} onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)}>
         
         {/* Holographic Circular Energy Ring */}
         <div
-          className={`absolute w-44 h-44 sm:w-56 sm:h-56 rounded-full border-2 border-dashed ${
-            isHovered ? 'border-amber-500 scale-110 rotate-180 duration-700' : 'border-blue-500/40 animate-spin-slow'
+          className={`absolute w-48 h-48 sm:w-60 sm:h-60 rounded-full border-2 sm:border-3 border-dashed shadow-[0_0_20px_rgba(37,99,235,0.4)] ${
+            isHovered ? 'border-amber-400 scale-110 rotate-180 duration-700 shadow-[0_0_30px_rgba(245,158,11,0.7)]' : 'border-blue-600 animate-spin-slow'
           } transition-all pointer-events-none`}
-          style={{ animationDuration: isHovered ? '6s' : '18s' }}
+          style={{ animationDuration: isHovered ? '6s' : '16s' }}
         />
 
+        {/* Bright Orbiting Blinking Sparks */}
+        <div className="absolute inset-0 pointer-events-none z-10 flex items-center justify-center">
+          <span className="absolute -top-3 left-1/4 w-3.5 h-3.5 bg-cyan-400 rounded-full shadow-[0_0_14px_#22d3ee] animate-ping" />
+          <span className="absolute top-1/4 -right-4 w-4 h-4 bg-amber-400 rounded-full shadow-[0_0_16px_#fbbf24] animate-pulse" />
+          <span className="absolute -bottom-3 right-1/4 w-3.5 h-3.5 bg-yellow-300 rounded-full shadow-[0_0_14px_#fde047] animate-ping" style={{ animationDelay: '300ms' }} />
+          <span className="absolute bottom-1/4 -left-4 w-4 h-4 bg-blue-500 rounded-full shadow-[0_0_16px_#3b82f6] animate-pulse" style={{ animationDelay: '500ms' }} />
+          <span className="absolute top-2 left-1/3 w-2.5 h-2.5 bg-emerald-400 rounded-full shadow-[0_0_12px_#34d399] animate-bounce" />
+          <span className="absolute bottom-2 right-1/3 w-2.5 h-2.5 bg-purple-400 rounded-full shadow-[0_0_12px_#c084fc] animate-ping" style={{ animationDelay: '700ms' }} />
+        </div>
+
         {/* Outer Glow Orb */}
-        <div className={`absolute w-36 h-36 sm:w-48 sm:h-48 rounded-full bg-round-1-blue/20 blur-2xl transition-all duration-500 ${isHovered ? 'scale-125 bg-amber-500/30' : ''}`} />
+        <div className={`absolute w-40 h-40 sm:w-52 sm:h-52 rounded-full bg-round-1-blue/30 blur-2xl transition-all duration-500 ${isHovered ? 'scale-125 bg-amber-500/40' : ''}`} />
 
         {/* Scanning Beam Effect */}
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/20 to-transparent pointer-events-none opacity-30 animate-pulse rounded-full" />
