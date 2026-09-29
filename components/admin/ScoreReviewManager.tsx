@@ -65,6 +65,16 @@ export default function ScoreReviewManager() {
       // 2. Fetch teams
       const { data: teams } = await supabase.from('teams').select('id, team_name, leader_name, leader_reg_no');
 
+      // Auto-migrate any legacy 'WINDEN' rows in DB to 'MAVERICKS'
+      if (teams) {
+        for (const t of teams) {
+          if (t.team_name && t.team_name.trim().toUpperCase() === 'WINDEN') {
+            t.team_name = 'MAVERICKS';
+            await supabase.from('teams').update({ team_name: 'MAVERICKS' }).eq('id', t.id);
+          }
+        }
+      }
+
       // 3. Fetch team_scores (with try-catch fallback for unmigrated DBs)
       let scoresData: any[] | null = null;
       try {

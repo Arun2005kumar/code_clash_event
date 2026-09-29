@@ -30,10 +30,12 @@ export type OfficialTeamName = typeof OFFICIAL_TEAMS[number];
  * Normalizes input string for robust case-insensitive, whitespace-insensitive matching.
  */
 function normalizeTeamName(name: string): string {
-  return name
+  const norm = name
     .trim()
     .toUpperCase()
     .replace(/[\s'`’_\-]/g, '');
+  if (norm === 'WINDEN') return 'MAVERICKS';
+  return norm;
 }
 
 /**

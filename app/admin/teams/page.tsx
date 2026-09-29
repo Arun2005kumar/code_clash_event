@@ -48,10 +48,13 @@ export default function AdminTeamsPage() {
         .select(`*, round1_attempts(score, status), round2_team_state(score, coins)`)
         .order('created_at');
 
-      if (error || !rawTeams) {
-        // Fallback to simple teams query if join fails
-        const { data: simpleTeams } = await supabase.from('teams').select('*').order('created_at');
-        rawTeams = simpleTeams || [];
+      if (rawTeams) {
+        for (const t of rawTeams) {
+          if (t.team_name && t.team_name.trim().toUpperCase() === 'WINDEN') {
+            t.team_name = 'MAVERICKS';
+            await supabase.from('teams').update({ team_name: 'MAVERICKS' }).eq('id', t.id);
+          }
+        }
       }
 
       const rows: TeamRow[] = (rawTeams ?? []).map((t: any) => {

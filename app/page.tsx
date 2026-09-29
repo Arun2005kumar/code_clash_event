@@ -85,14 +85,23 @@ export default function HomePage() {
     try {
       const supabase = createClient();
 
-      // 1. Check existing team by official team_name
-      const { data: existingTeam } = await supabase
+      // 1. Check existing team by official team_name or legacy name 'WINDEN'
+      let { data: existingTeam } = await supabase
         .from('teams')
         .select('*')
-        .ilike('team_name', officialTeamName)
+        .or(`team_name.ilike.${officialTeamName},team_name.ilike.WINDEN`)
         .maybeSingle();
 
       if (existingTeam) {
+        // Auto-update team_name if it was previously WINDEN
+        if (existingTeam.team_name.toUpperCase() === 'WINDEN') {
+          await supabase
+            .from('teams')
+            .update({ team_name: 'MAVERICKS' })
+            .eq('id', existingTeam.id);
+          existingTeam.team_name = 'MAVERICKS';
+        }
+
         // Check if team is disqualified / locked out due to > 3 violations
         const { count: vCount } = await supabase
           .from('anti_cheat_violations')
@@ -109,6 +118,7 @@ export default function HomePage() {
         await supabase
           .from('teams')
           .update({
+            team_name: 'MAVERICKS',
             login_status: true,
             leader_name: cleanLeaderName,
             leader_reg_no: cleanRegNo,
