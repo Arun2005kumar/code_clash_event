@@ -35,7 +35,7 @@ INSERT INTO teams (team_name, leader_name, leader_reg_no) VALUES
   ('LOGIC MAKERS', 'Team Leader', 'REG010'),
   ('QUAD SQUAD', 'Team Leader', 'REG011'),
   ('CODEPULSE', 'Team Leader', 'REG012'),
-  ('WINDEN', 'Team Leader', 'REG013'),
+  ('MAVERICKS', 'Team Leader', 'REG013'),
   ('PROMPT PIRATES', 'Team Leader', 'REG014'),
   ('IMMORTAL', 'Team Leader', 'REG015'),
   ('KINETIC CODERS', 'Team Leader', 'REG016'),
