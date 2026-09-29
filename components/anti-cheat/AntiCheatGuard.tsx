@@ -62,7 +62,7 @@ export default function AntiCheatGuard({
   // ─── FULLSCREEN ──────────────────────────────────────────────────────────────
 
   const requestFullscreen = useCallback(async () => {
-    if (fullscreenRequestInProgressRef.current) return
+    if (isGuardDisabled || fullscreenRequestInProgressRef.current) return
     fullscreenRequestInProgressRef.current = true
 
     const el = document.documentElement
@@ -84,7 +84,7 @@ export default function AntiCheatGuard({
     } finally {
       fullscreenRequestInProgressRef.current = false
     }
-  }, [])
+  }, [isGuardDisabled])
 
   const isCurrentlyFullscreen = useCallback(() => {
     return !!(
@@ -98,16 +98,19 @@ export default function AntiCheatGuard({
   // ─── VIOLATION HANDLER ───────────────────────────────────────────────────────
 
   const startFullscreenCountdown = useCallback(() => {
+    if (isGuardDisabled) return
+
     if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current)
     setCountdown(3)
 
     let count = 3
     countdownIntervalRef.current = setInterval(() => {
+      if (!guardMountedRef.current) return
       count -= 1
       setCountdown(count)
 
       if (count <= 0) {
-        clearInterval(countdownIntervalRef.current!)
+        if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current)
         countdownIntervalRef.current = null
         requestFullscreen()
         // Overlay stays until fullscreen is confirmed
@@ -115,14 +118,14 @@ export default function AntiCheatGuard({
           if (isCurrentlyFullscreen() && guardMountedRef.current) {
             setOverlayVisible(false)
             overlayVisibleRef.current = false
-          } else {
+          } else if (guardMountedRef.current) {
             // Still not fullscreen — retry silently
             requestFullscreen()
           }
         }, 800)
       }
     }, 1000)
-  }, [requestFullscreen, isCurrentlyFullscreen])
+  }, [isGuardDisabled, requestFullscreen, isCurrentlyFullscreen])
 
   const triggerViolation = useCallback(
     async (type: ViolationType) => {
@@ -184,36 +187,37 @@ export default function AntiCheatGuard({
   // ─── TAB / VISIBILITY ────────────────────────────────────────────────────────
 
   const handleVisibilityChange = useCallback(() => {
-    if (!guardMountedRef.current) return
+    if (isGuardDisabled || !guardMountedRef.current) return
     if (document.hidden) {
       triggerViolation('tab_switch')
     }
-  }, [triggerViolation])
+  }, [isGuardDisabled, triggerViolation])
 
   const handleWindowBlur = useCallback(() => {
-    if (!guardMountedRef.current) return
+    if (isGuardDisabled || !guardMountedRef.current) return
     // Small delay to avoid false positive from fullscreen change
     setTimeout(() => {
-      if (!document.hasFocus() && guardMountedRef.current) {
+      if (!document.hasFocus() && guardMountedRef.current && !isGuardDisabled) {
         triggerViolation('window_blur')
       }
     }, 200)
-  }, [triggerViolation])
+  }, [isGuardDisabled, triggerViolation])
 
   const handleWindowFocus = useCallback(() => {
+    if (isGuardDisabled || !guardMountedRef.current) return
     // When window regains focus: if overlay is for tab_switch or window_blur, dismiss after short delay
     if (
       overlayVisibleRef.current &&
       (overlayType === 'tab_switch' || overlayType === 'window_blur')
     ) {
       setTimeout(() => {
-        if (guardMountedRef.current) {
+        if (guardMountedRef.current && !isGuardDisabled) {
           setOverlayVisible(false)
           overlayVisibleRef.current = false
         }
       }, 1500)
     }
-  }, [overlayType])
+  }, [isGuardDisabled, overlayType])
 
   // ─── KEYBOARD SHORTCUTS ──────────────────────────────────────────────────────
 
@@ -253,6 +257,8 @@ export default function AntiCheatGuard({
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
+      if (isGuardDisabled || !guardMountedRef.current) return
+
       // Block all function keys
       if (BLOCKED_KEYS.has(e.key)) {
         e.preventDefault()
@@ -304,75 +310,82 @@ export default function AntiCheatGuard({
       // Alt+Tab cannot be blocked (OS-level) but window blur covers it
       // Alt+F4 cannot be blocked but that closes the window entirely
     },
-    [triggerViolation]
+    [isGuardDisabled, triggerViolation]
   )
 
   // ─── CLIPBOARD EVENTS ────────────────────────────────────────────────────────
 
   const handleCopy = useCallback(
     (e: ClipboardEvent) => {
+      if (isGuardDisabled || !guardMountedRef.current) return
       e.preventDefault()
       e.stopPropagation()
       triggerViolation('copy_attempt')
     },
-    [triggerViolation]
+    [isGuardDisabled, triggerViolation]
   )
 
   const handlePaste = useCallback(
     (e: ClipboardEvent) => {
+      if (isGuardDisabled || !guardMountedRef.current) return
       e.preventDefault()
       e.stopPropagation()
       triggerViolation('paste_attempt')
     },
-    [triggerViolation]
+    [isGuardDisabled, triggerViolation]
   )
 
   const handleCut = useCallback(
     (e: ClipboardEvent) => {
+      if (isGuardDisabled || !guardMountedRef.current) return
       e.preventDefault()
       e.stopPropagation()
       triggerViolation('cut_attempt')
     },
-    [triggerViolation]
+    [isGuardDisabled, triggerViolation]
   )
 
   // ─── CONTEXT MENU ────────────────────────────────────────────────────────────
 
   const handleContextMenu = useCallback(
     (e: MouseEvent) => {
+      if (isGuardDisabled || !guardMountedRef.current) return
       e.preventDefault()
       e.stopPropagation()
       triggerViolation('right_click')
       return false
     },
-    [triggerViolation]
+    [isGuardDisabled, triggerViolation]
   )
 
   // ─── TEXT SELECTION ──────────────────────────────────────────────────────────
 
   const handleSelectStart = useCallback((e: Event) => {
+    if (isGuardDisabled || !guardMountedRef.current) return
     e.preventDefault()
     return false
-  }, [])
+  }, [isGuardDisabled])
 
   const handleDragStart = useCallback(
     (e: DragEvent) => {
+      if (isGuardDisabled || !guardMountedRef.current) return
       e.preventDefault()
       triggerViolation('drag_attempt')
       return false
     },
-    [triggerViolation]
+    [isGuardDisabled, triggerViolation]
   )
 
   // ─── DEVTOOLS DETECTION ──────────────────────────────────────────────────────
 
   const detectDevTools = useCallback(() => {
+    if (isGuardDisabled || !guardMountedRef.current) return
+
     // Method 1: window size differential
     const widthDiff = window.outerWidth - window.innerWidth
     const heightDiff = window.outerHeight - window.innerHeight
 
-    // DevTools open typically creates >100px difference
-    // Account for browser chrome (bookmarks bar etc) with higher threshold
+    // DevTools open typically creates >160px difference
     if (widthDiff > 160 || heightDiff > 160) {
       triggerViolation('devtools_open')
       return
@@ -383,27 +396,36 @@ export default function AntiCheatGuard({
     // eslint-disable-next-line no-console
     console.log('%c', 'font-size:0')
     const endTime = performance.now()
-    // DevTools console causes significant timing delay
     if (endTime - startTime > 100) {
       triggerViolation('devtools_open')
     }
-  }, [triggerViolation])
+  }, [isGuardDisabled, triggerViolation])
 
   // ─── PRINT DETECTION ─────────────────────────────────────────────────────────
 
   const handleBeforePrint = useCallback(
     (e: Event) => {
+      if (isGuardDisabled || !guardMountedRef.current) return
       e.preventDefault()
       triggerViolation('print_attempt')
-      // Attempt to cancel print dialog
       window.stop()
     },
-    [triggerViolation]
+    [isGuardDisabled, triggerViolation]
   )
 
   // ─── MOUNT / UNMOUNT ─────────────────────────────────────────────────────────
 
   useEffect(() => {
+    if (isGuardDisabled) {
+      guardMountedRef.current = false
+      setOverlayVisible(false)
+      overlayVisibleRef.current = false
+      if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current)
+      if (fullscreenRetryRef.current) clearTimeout(fullscreenRetryRef.current)
+      if (devtoolsIntervalRef.current) clearInterval(devtoolsIntervalRef.current)
+      return
+    }
+
     guardMountedRef.current = true
 
     // 1. Check if currently fullscreen on mount; if not, trigger overlay immediately
@@ -421,7 +443,7 @@ export default function AntiCheatGuard({
     requestFullscreen()
 
     const handleUserInteractionForFullscreen = () => {
-      if (!isCurrentlyFullscreen()) {
+      if (!isGuardDisabled && !isCurrentlyFullscreen()) {
         requestFullscreen()
       }
     }
@@ -489,7 +511,10 @@ export default function AntiCheatGuard({
       if (fullscreenRetryRef.current) clearTimeout(fullscreenRetryRef.current)
     }
   }, [
+    isGuardDisabled,
     requestFullscreen,
+    isCurrentlyFullscreen,
+    startFullscreenCountdown,
     handleFullscreenChange,
     handleVisibilityChange,
     handleWindowBlur,
@@ -508,6 +533,8 @@ export default function AntiCheatGuard({
   // ─── CSS INJECTION (user-select none globally while mounted) ─────────────────
 
   useEffect(() => {
+    if (isGuardDisabled) return
+
     const style = document.createElement('style')
     style.id = 'anti-cheat-styles'
     style.innerHTML = `
@@ -555,7 +582,7 @@ export default function AntiCheatGuard({
       const existing = document.getElementById('anti-cheat-styles')
       if (existing) existing.remove()
     }
-  }, [])
+  }, [isGuardDisabled])
 
   if (isGuardDisabled) {
     return <>{children}</>

@@ -178,6 +178,7 @@ export default function Round1Page() {
   const handleSubmit = async (isAuto = false) => {
     if (submitting || submitted) return;
     setSubmitting(true);
+    setSubmitted(true);
     setShowSubmitModal(false);
 
     try {
