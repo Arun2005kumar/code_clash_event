@@ -136,8 +136,78 @@ export interface CompetitionSettings {
   current_round2_question: number;
   show_round1_explanations: boolean;
   round3_results_published: boolean;
+  results_published?: boolean;
+  published_at?: string;
   updated_at: string;
 }
+
+export interface TeamScore {
+  id: string;
+  team_id: string;
+  r1_score: number;
+  r2_score: number;
+  r3_score: number;
+  bonus_adjustment: number;
+  calculated_score: number;
+  admin_override_score: number | null;
+  final_score: number;
+  score_override_reason: string | null;
+  score_modified_by: string | null;
+  score_modified_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ScoreAuditLog {
+  id: string;
+  team_id: string;
+  previous_score: number | null;
+  new_score: number;
+  modified_by: string;
+  reason: string | null;
+  created_at: string;
+}
+
+export interface ScoreReviewItem {
+  team_id: string;
+  team_name: string;
+  leader_name: string;
+  leader_reg_no: string;
+  r1_score: number;
+  r2_score: number;
+  r3_score: number;
+  bonus_adjustment: number;
+  calculated_score: number;
+  admin_override_score: number | null;
+  final_score: number;
+  score_override_reason: string | null;
+  score_modified_by: string | null;
+  score_modified_at: string | null;
+  history_count: number;
+  results_published: boolean;
+}
+
+export interface PrePublishSummary {
+  totalTeams: number;
+  scoresReviewed: number;
+  manualAdjustments: number;
+  unreviewedScores: number;
+  isValidToPublish: boolean;
+}
+
+export interface Round3LeaderboardEntry {
+  rank: number;
+  team_id: string;
+  team_name: string;
+  r1_score: number;
+  r2_score: number;
+  r3_status: Round3TeamStatus;
+  r3_vault_unlocked: boolean;
+  finish_time_seconds?: number;
+  hints_used: number;
+  total_score: number;
+}
+
 
 export interface AntiCheatViolation {
   id: string;

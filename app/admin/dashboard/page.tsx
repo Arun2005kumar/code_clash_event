@@ -342,23 +342,29 @@ export default function AdminDashboardPage() {
             </div>
           </div>
 
-          {/* Publish Final Scoreboard */}
-          <div className="border-t-2 border-surface-muted pt-space-md flex items-center justify-between p-space-md bg-status-correct/5 rounded-xl border border-status-correct/20">
-            <div className="flex flex-col">
-              <span className="font-label-sticker text-label-sticker text-status-correct uppercase font-black block">FINAL SCOREBOARD VISIBILITY</span>
-              <span className="font-headline-sm text-headline-sm font-extrabold text-ink-primary">📢 Publish Scores to Teams</span>
-              <span className="font-body-sm text-body-sm text-ink-secondary">Enabling this makes the final leaderboard visible at /scoreboard for all teams</span>
-              <span className={`font-label-sticker text-[10px] font-bold uppercase mt-1 ${(settings as any).round3_results_published ? 'text-status-correct' : 'text-ink-secondary'}`}>
-                ● {(settings as any).round3_results_published ? '🌐 PUBLIC — All teams can see rankings' : 'PRIVATE — Hidden from teams'}
-              </span>
+          {/* RESULT MANAGEMENT CARD */}
+          <div className="border-t-2 border-surface-muted pt-space-md p-space-md bg-surface-muted/50 rounded-xl border-2 border-ink-primary shadow-[2px_2px_0px_#0F172A] space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-space-md">
+              <div>
+                <span className="font-label-sticker text-label-sticker text-round-1-blue uppercase font-black block">RESULT MANAGEMENT &amp; PUBLISHING</span>
+                <h3 className="font-headline-sm text-headline-sm font-extrabold text-ink-primary">📢 Review &amp; Edit Final Scores</h3>
+                <p className="font-body-sm text-body-sm text-ink-secondary">
+                  Review calculated scores across all 3 rounds, apply manual score overrides, and publish results when ready.
+                </p>
+                <span className={`font-label-sticker text-[10px] font-bold uppercase mt-1 inline-block px-2 py-0.5 rounded border border-ink-primary ${(settings as any).round3_results_published || (settings as any).results_published ? 'bg-status-correct text-white' : 'bg-currency-gold text-ink-primary'}`}>
+                  ● {(settings as any).round3_results_published || (settings as any).results_published ? '✅ PUBLISHED — Visible on public leaderboard' : '⚠️ DRAFT MODE — Hidden from participants'}
+                </span>
+              </div>
+              <div className="flex items-center gap-space-sm shrink-0">
+                <a
+                  href="/admin/scores"
+                  className="px-space-md py-space-sm bg-round-1-blue text-white font-headline-sm text-label-ticker font-black rounded-xl border-2 border-ink-primary shadow-[2px_2px_0px_#0F172A] transition-all cursor-pointer inline-flex items-center gap-1"
+                >
+                  <span className="material-symbols-outlined text-[18px]">edit_note</span>
+                  <span>REVIEW ALL SCORES</span>
+                </a>
+              </div>
             </div>
-            <button
-              onClick={() => updateSetting('round3_results_published', !(settings as any).round3_results_published)}
-              disabled={settingsLoading}
-              className={`relative w-14 h-8 rounded-full transition-colors cursor-pointer border-2 border-ink-primary shadow-inner shrink-0 ml-space-md ${(settings as any).round3_results_published ? 'bg-status-correct' : 'bg-surface-card'}`}
-            >
-              <span className={`absolute top-1 left-1 w-5 h-5 rounded-full bg-ink-primary transition-transform ${(settings as any).round3_results_published ? 'translate-x-6 bg-white' : 'translate-x-0'}`} />
-            </button>
           </div>
 
           {/* Initialize Actions */}

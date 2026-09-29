@@ -17,14 +17,18 @@ export default function Round3Results() {
     // Fetch settings
     const { data: settings } = await supabase
       .from('competition_settings')
-      .select('round3_results_published')
+      .select('results_published, round3_results_published')
       .limit(1)
       .maybeSingle();
 
-    setResultsPublished(settings?.round3_results_published ?? false);
+    setResultsPublished((settings as any)?.results_published ?? (settings as any)?.round3_results_published ?? false);
 
-    // Fetch teams, round1 attempts, round2 team state, round3 state
+    // Fetch teams, team_scores, round1 attempts, round2 team state, round3 state
     const { data: teams } = await supabase.from('teams').select('*');
+    const { data: scoresData } = await supabase.from('team_scores').select('*');
+    const scoreMap = new Map<string, any>();
+    scoresData?.forEach(s => scoreMap.set(s.team_id, s));
+
     const { data: r1Attempts } = await supabase.from('round1_attempts').select('team_id, score');
     const { data: r2State } = await supabase.from('round2_team_state').select('team_id, score');
     const { data: r3State } = await supabase.from('round3_team_state').select('*');
@@ -39,11 +43,14 @@ export default function Round3Results() {
     r3State?.forEach(s => r3Map.set(s.team_id, s));
 
     const entries: Round3LeaderboardEntry[] = (teams ?? []).map(t => {
-      const r1Score = r1Map.get(t.id) ?? 0;
-      const r2Score = r2Map.get(t.id) ?? 0;
+      const ts = scoreMap.get(t.id);
+      const r1Score = ts ? ts.r1_score : (r1Map.get(t.id) ?? 0);
+      const r2Score = ts ? ts.r2_score : (r2Map.get(t.id) ?? 0);
       const r3 = r3Map.get(t.id);
       const isUnlocked = r3?.vault_unlocked ?? false;
-      const totalScore = r1Score + r2Score + (isUnlocked ? 10 : 0);
+      const totalScore = ts?.final_score !== undefined && ts?.final_score !== null
+        ? ts.final_score
+        : (r1Score + r2Score + (isUnlocked ? 10 : 0));
 
       return {
         rank: 0,
@@ -59,17 +66,12 @@ export default function Round3Results() {
       };
     });
 
-    // Sort entries:
-    // 1. Vault unlocked first
-    // 2. Total score desc
-    // 3. Finish time asc
-    // 4. Hints used asc
     entries.sort((a, b) => {
-      if (a.r3_vault_unlocked !== b.r3_vault_unlocked) {
-        return a.r3_vault_unlocked ? -1 : 1;
-      }
       if (b.total_score !== a.total_score) {
         return b.total_score - a.total_score;
+      }
+      if (a.r3_vault_unlocked !== b.r3_vault_unlocked) {
+        return a.r3_vault_unlocked ? -1 : 1;
       }
       const timeA = a.finish_time_seconds ?? 999999;
       const timeB = b.finish_time_seconds ?? 999999;
@@ -90,17 +92,28 @@ export default function Round3Results() {
   }, []);
 
   const togglePublishResults = async () => {
-    const supabase = createClient();
     const nextState = !resultsPublished;
-    const { error } = await supabase
-      .from('competition_settings')
-      .update({ round3_results_published: nextState })
-      .neq('id', '00000000-0000-0000-0000-000000000000');
-
-    if (error) toast.error(error.message);
-    else {
-      setResultsPublished(nextState);
-      toast.success(`Results ${nextState ? 'PUBLISHED TO TEAMS 📢' : 'UNPUBLISHED'}`);
+    if (nextState) {
+      const res = await fetch('/api/admin/scores/publish', { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        setResultsPublished(true);
+        toast.success('Results PUBLISHED TO TEAMS 📢');
+        loadData();
+      } else {
+        toast.error(data.message || 'Failed to publish results');
+      }
+    } else {
+      if (!window.confirm('Are you sure you want to unpublish the results? Participants will temporarily lose access.')) return;
+      const res = await fetch('/api/admin/scores/unpublish', { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        setResultsPublished(false);
+        toast.success('Results UNPUBLISHED');
+        loadData();
+      } else {
+        toast.error(data.message || 'Failed to unpublish results');
+      }
     }
   };
 

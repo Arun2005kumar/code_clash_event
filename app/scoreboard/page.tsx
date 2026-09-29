@@ -29,11 +29,11 @@ export default function ScoreboardPage() {
 
     const { data: settings } = await supabase
       .from('competition_settings')
-      .select('round3_results_published')
+      .select('results_published, round3_results_published')
       .limit(1)
       .maybeSingle();
 
-    const published = (settings as any)?.round3_results_published ?? false;
+    const published = (settings as any)?.results_published ?? (settings as any)?.round3_results_published ?? false;
     setIsPublished(published);
 
     if (!published) {
@@ -42,6 +42,10 @@ export default function ScoreboardPage() {
     }
 
     const { data: teams } = await supabase.from('teams').select('id, team_name');
+    const { data: scoresData } = await supabase.from('team_scores').select('*');
+    const scoreMap = new Map<string, any>();
+    scoresData?.forEach((s: any) => scoreMap.set(s.team_id, s));
+
     const { data: r1Attempts } = await supabase.from('round1_attempts').select('team_id, score').in('status', ['submitted', 'auto_submitted']);
     const { data: r2State } = await supabase.from('round2_team_state').select('team_id, score');
     const { data: r3State } = await supabase.from('round3_team_state').select('*');
@@ -59,11 +63,14 @@ export default function ScoreboardPage() {
     r3State?.forEach((s: any) => r3Map.set(s.team_id, s));
 
     const entries: LeaderboardRow[] = (teams ?? []).map((t: any) => {
-      const r1Score = r1Map.get(t.id) ?? 0;
-      const r2Score = r2Map.get(t.id) ?? 0;
+      const ts = scoreMap.get(t.id);
+      const r1Score = ts ? ts.r1_score : (r1Map.get(t.id) ?? 0);
+      const r2Score = ts ? ts.r2_score : (r2Map.get(t.id) ?? 0);
       const r3 = r3Map.get(t.id);
       const isUnlocked = r3?.vault_unlocked ?? false;
-      const totalScore = r1Score + r2Score + (isUnlocked ? 10 : 0);
+      const totalScore = ts?.final_score !== undefined && ts?.final_score !== null
+        ? ts.final_score
+        : (r1Score + r2Score + (isUnlocked ? 10 : 0));
 
       return {
         rank: 0,
@@ -79,8 +86,8 @@ export default function ScoreboardPage() {
     });
 
     entries.sort((a, b) => {
-      if (a.r3_vault_unlocked !== b.r3_vault_unlocked) return a.r3_vault_unlocked ? -1 : 1;
       if (b.total_score !== a.total_score) return b.total_score - a.total_score;
+      if (a.r3_vault_unlocked !== b.r3_vault_unlocked) return a.r3_vault_unlocked ? -1 : 1;
       const timeA = a.finish_time_seconds ?? 999999;
       const timeB = b.finish_time_seconds ?? 999999;
       if (timeA !== timeB) return timeA - timeB;
@@ -100,6 +107,7 @@ export default function ScoreboardPage() {
     const channel = supabase
       .channel('scoreboard-realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'competition_settings' }, () => loadData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'team_scores' }, () => loadData())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'round1_attempts' }, () => loadData())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'round2_team_state' }, () => loadData())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'round3_team_state' }, () => loadData())

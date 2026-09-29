@@ -13,6 +13,7 @@ const NAV = [
   { href: '/admin/round1', icon: 'timer', label: 'Round 1 Manager' },
   { href: '/admin/round2/auction', icon: 'gavel', label: 'Round 2 Auction', hasLive: true },
   { href: '/admin/round3', icon: 'terminal', label: 'Round 3 Heist' },
+  { href: '/admin/scores', icon: 'edit_note', label: 'Review & Edit Scores' },
   { href: '/admin/round3/results', icon: 'military_tech', label: 'Round 3 Results' },
   { href: '/admin/teams', icon: 'group', label: 'Teams & Scores' },
 ];
