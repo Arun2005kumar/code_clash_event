@@ -23,13 +23,19 @@ export async function POST(req: NextRequest) {
     const supabase = createClient();
 
     // 1. Check if competition results are published (Locked state)
-    const { data: settings } = await supabase
-      .from('competition_settings')
-      .select('results_published, round3_results_published')
-      .limit(1)
-      .maybeSingle();
+    let isPublished = false;
+    try {
+      const { data: settings } = await supabase
+        .from('competition_settings')
+        .select('results_published, round3_results_published')
+        .limit(1)
+        .maybeSingle();
 
-    const isPublished = settings?.results_published ?? settings?.round3_results_published ?? false;
+      isPublished = settings?.results_published ?? settings?.round3_results_published ?? false;
+    } catch (e) {
+      console.warn('Error fetching competition_settings:', e);
+    }
+
     if (isPublished) {
       return NextResponse.json(
         {
@@ -40,48 +46,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 2. Action: Clear override
-    if (action === 'clear') {
-      const { data: existing } = await supabase
-        .from('team_scores')
-        .select('*')
-        .eq('team_id', teamId)
-        .maybeSingle();
-
-      const prevFinal = existing?.final_score ?? 0;
-      const calcScore = existing?.calculated_score ?? 0;
-
-      const { error: clearErr } = await supabase
-        .from('team_scores')
-        .update({
-          admin_override_score: null,
-          score_override_reason: 'Reverted to calculated score',
-          score_modified_by: modifiedBy || 'Admin',
-          score_modified_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .eq('team_id', teamId);
-
-      if (clearErr) {
-        return NextResponse.json({ success: false, message: clearErr.message }, { status: 500 });
-      }
-
-      await supabase.from('score_audit_logs').insert({
-        team_id: teamId,
-        previous_score: prevFinal,
-        new_score: calcScore,
-        modified_by: modifiedBy || 'Admin',
-        reason: 'Reverted to calculated score',
-        created_at: new Date().toISOString(),
-      });
-
-      return NextResponse.json({
-        success: true,
-        message: `Override cleared. Score reverted to calculated score (${calcScore}).`,
-      });
-    }
-
-    // 3. Validate numeric score inputs
+    // 2. Validate numeric score inputs
     const parsedR1 = Number(r1Score ?? 0);
     const parsedR2 = Number(r2Score ?? 0);
     const parsedR3 = Number(r3Score ?? 0);
@@ -115,82 +80,85 @@ export async function POST(req: NextRequest) {
     const cleanReason = (reason && typeof reason === 'string' && reason.trim()) ? reason.trim() : 'Manual score edit';
     const cleanAdmin = (modifiedBy && typeof modifiedBy === 'string' && modifiedBy.trim()) ? modifiedBy.trim() : 'Admin';
 
-    // 4. Fetch existing team_scores row to get previous final score for audit trail
-    const { data: existingScore } = await supabase
-      .from('team_scores')
-      .select('final_score')
-      .eq('team_id', teamId)
-      .maybeSingle();
+    // 3. ALWAYS update existing core round tables FIRST (Round 1, Round 2, Round 3)
+    // Round 1
+    const { data: existingR1 } = await supabase.from('round1_attempts').select('id').eq('team_id', teamId).maybeSingle();
+    if (existingR1) {
+      await supabase.from('round1_attempts').update({ score: parsedR1, status: 'submitted' }).eq('team_id', teamId);
+    } else {
+      await supabase.from('round1_attempts').insert({ team_id: teamId, score: parsedR1, status: 'submitted' });
+    }
 
-    const previousScore = existingScore?.final_score ?? 0;
+    // Round 2
+    const { data: existingR2 } = await supabase.from('round2_team_state').select('id').eq('team_id', teamId).maybeSingle();
+    if (existingR2) {
+      await supabase.from('round2_team_state').update({ score: parsedR2 }).eq('team_id', teamId);
+    } else {
+      await supabase.from('round2_team_state').insert({ team_id: teamId, score: parsedR2, coins: 100, status: 'active' });
+    }
 
-    // 5. Direct DB update/upsert to team_scores table (No RPC schema cache issue!)
-    const { error: upsertErr } = await supabase
-      .from('team_scores')
-      .upsert(
-        {
+    // Round 3
+    const { data: existingR3 } = await supabase.from('round3_team_state').select('id').eq('team_id', teamId).maybeSingle();
+    if (existingR3) {
+      await supabase.from('round3_team_state').update({ score: parsedR3 }).eq('team_id', teamId);
+    } else {
+      await supabase.from('round3_team_state').insert({ team_id: teamId, score: parsedR3, status: 'in_progress', vault_unlocked: parsedR3 > 0 });
+    }
+
+    // 4. Try updating team_scores table (if migration 022 has been executed)
+    let teamScoresUpdated = false;
+    try {
+      const { data: existingScore } = await supabase
+        .from('team_scores')
+        .select('final_score')
+        .eq('team_id', teamId)
+        .maybeSingle();
+
+      const previousScore = existingScore?.final_score ?? 0;
+
+      const { error: upsertErr } = await supabase
+        .from('team_scores')
+        .upsert(
+          {
+            team_id: teamId,
+            r1_score: parsedR1,
+            r2_score: parsedR2,
+            r3_score: parsedR3,
+            bonus_adjustment: parsedBonus,
+            calculated_score: calculatedScore,
+            admin_override_score: action === 'clear' ? null : parsedOverride,
+            score_override_reason: cleanReason,
+            score_modified_by: cleanAdmin,
+            score_modified_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: 'team_id' }
+        );
+
+      if (!upsertErr) {
+        teamScoresUpdated = true;
+
+        // Add to audit trail
+        const auditDetail = `R1: ${parsedR1}, R2: ${parsedR2}, R3: ${parsedR3}, Bonus: ${parsedBonus}${parsedOverride !== null ? `, Override Final: ${parsedOverride}` : ''} | ${cleanReason}`;
+        await supabase.from('score_audit_logs').insert({
           team_id: teamId,
-          r1_score: parsedR1,
-          r2_score: parsedR2,
-          r3_score: parsedR3,
-          bonus_adjustment: parsedBonus,
-          calculated_score: calculatedScore,
-          admin_override_score: parsedOverride,
-          score_override_reason: cleanReason,
-          score_modified_by: cleanAdmin,
-          score_modified_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: 'team_id' }
-      );
-
-    if (upsertErr) {
-      console.error('Error upserting team_scores:', upsertErr);
-      return NextResponse.json({ success: false, message: upsertErr.message }, { status: 500 });
+          previous_score: previousScore,
+          new_score: finalScore,
+          modified_by: cleanAdmin,
+          reason: auditDetail,
+          created_at: new Date().toISOString(),
+        });
+      } else {
+        console.warn('team_scores table notice (migration 022 not run yet):', upsertErr.message);
+      }
+    } catch (e: any) {
+      console.warn('team_scores table bypass:', e.message);
     }
-
-    // 6. Update individual round state tables to keep all tables synchronized
-    try {
-      await supabase
-        .from('round1_attempts')
-        .update({ score: parsedR1 })
-        .eq('team_id', teamId);
-    } catch (e) {
-      console.warn('Sync warning for round1_attempts:', e);
-    }
-
-    try {
-      await supabase
-        .from('round2_team_state')
-        .update({ score: parsedR2 })
-        .eq('team_id', teamId);
-    } catch (e) {
-      console.warn('Sync warning for round2_team_state:', e);
-    }
-
-    try {
-      await supabase
-        .from('round3_team_state')
-        .update({ score: parsedR3 })
-        .eq('team_id', teamId);
-    } catch (e) {
-      console.warn('Sync warning for round3_team_state:', e);
-    }
-
-    // 7. Insert entry into score audit trail
-    const auditDetail = `R1: ${parsedR1}, R2: ${parsedR2}, R3: ${parsedR3}, Bonus: ${parsedBonus}${parsedOverride !== null ? `, Override Final: ${parsedOverride}` : ''} | ${cleanReason}`;
-    await supabase.from('score_audit_logs').insert({
-      team_id: teamId,
-      previous_score: previousScore,
-      new_score: finalScore,
-      modified_by: cleanAdmin,
-      reason: auditDetail,
-      created_at: new Date().toISOString(),
-    });
 
     return NextResponse.json({
       success: true,
-      message: `Scores updated successfully! New Final Score: ${finalScore}`,
+      message: `Scores updated successfully! R1: ${parsedR1}, R2: ${parsedR2}, R3: ${parsedR3}, Bonus: ${parsedBonus} => Final Score: ${finalScore}`,
+      teamScoresUpdated,
       data: {
         team_id: teamId,
         r1_score: parsedR1,

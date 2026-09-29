@@ -65,12 +65,18 @@ export default function ScoreReviewManager() {
       // 2. Fetch teams
       const { data: teams } = await supabase.from('teams').select('id, team_name, leader_name, leader_reg_no');
 
-      // 3. Fetch team_scores
-      const { data: scoresData } = await supabase.from('team_scores').select('*');
+      // 3. Fetch team_scores (with try-catch fallback for unmigrated DBs)
+      let scoresData: any[] | null = null;
+      try {
+        const res = await supabase.from('team_scores').select('*');
+        if (!res.error) scoresData = res.data;
+      } catch (e) {
+        console.warn('team_scores table notice:', e);
+      }
       const scoreMap = new Map<string, any>();
       scoresData?.forEach((s: any) => scoreMap.set(s.team_id, s));
 
-      // 4. Fetch fallback scores from round attempts
+      // 4. Fetch scores from core round tables (always reliable)
       const { data: r1Attempts } = await supabase.from('round1_attempts').select('team_id, score').in('status', ['submitted', 'auto_submitted']);
       const { data: r2States } = await supabase.from('round2_team_state').select('team_id, score');
       const { data: r3States } = await supabase.from('round3_team_state').select('team_id, score, vault_unlocked');
@@ -87,8 +93,14 @@ export default function ScoreReviewManager() {
       const r3Map = new Map<string, any>();
       r3States?.forEach((s: any) => r3Map.set(s.team_id, s));
 
-      // 5. Fetch audit counts
-      const { data: logsData } = await supabase.from('score_audit_logs').select('team_id');
+      // 5. Fetch audit counts (with try-catch fallback)
+      let logsData: any[] | null = null;
+      try {
+        const res = await supabase.from('score_audit_logs').select('team_id');
+        if (!res.error) logsData = res.data;
+      } catch (e) {
+        console.warn('score_audit_logs table notice:', e);
+      }
       const historyCountMap = new Map<string, number>();
       logsData?.forEach((l: any) => {
         historyCountMap.set(l.team_id, (historyCountMap.get(l.team_id) ?? 0) + 1);

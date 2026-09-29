@@ -42,7 +42,13 @@ export default function ScoreboardPage() {
     }
 
     const { data: teams } = await supabase.from('teams').select('id, team_name');
-    const { data: scoresData } = await supabase.from('team_scores').select('*');
+    let scoresData: any[] | null = null;
+    try {
+      const res = await supabase.from('team_scores').select('*');
+      if (!res.error) scoresData = res.data;
+    } catch (e) {
+      console.warn('team_scores notice:', e);
+    }
     const scoreMap = new Map<string, any>();
     scoresData?.forEach((s: any) => scoreMap.set(s.team_id, s));
 
