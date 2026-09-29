@@ -28,6 +28,9 @@ export function clearTeamSession(): void {
   if (typeof window === 'undefined') return;
   sessionStorage.removeItem(SESSION_KEY);
   localStorage.removeItem(SESSION_KEY);
+  sessionStorage.removeItem('codeclash_quiz_answers');
+  sessionStorage.removeItem('codeclash_attempt_id');
+  sessionStorage.removeItem('codeclash_start_time');
   window.dispatchEvent(new Event('team-session-change'));
 }
 

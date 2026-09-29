@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
 import { getTeamSession } from '@/lib/auth/session';
 import {
-  saveAnswerLocally, getLocalAnswers, saveAttemptId, getAttemptId,
+  saveAnswerLocally, getLocalAnswers, clearLocalAnswers, saveAttemptId, getAttemptId,
   saveStartTime, getStartTime, ROUND1_DURATION_SECONDS,
 } from '@/lib/quiz/scoring';
 import AntiCheatGuard from '@/components/anti-cheat/AntiCheatGuard';
@@ -76,20 +76,23 @@ export default function Round1Page() {
         return;
       }
 
-      saveAttemptId(attempt.attempt_id);
+      const currentAttemptIdInStorage = getAttemptId();
+      if (currentAttemptIdInStorage !== attempt.attempt_id) {
+        clearLocalAnswers();
+        saveAttemptId(attempt.attempt_id);
+      }
 
-      const stored = getStartTime();
-      if (!stored) {
-        const { data: dbAttempt } = await supabase
-          .from('round1_attempts')
-          .select('started_at')
-          .eq('id', attempt.attempt_id)
-          .single();
-        if (dbAttempt?.started_at) {
-          saveStartTime(new Date(dbAttempt.started_at).getTime());
-        } else {
-          saveStartTime(Date.now());
-        }
+      // Always sync start time from database attempt record to prevent stale timer auto-submit
+      const { data: dbAttempt } = await supabase
+        .from('round1_attempts')
+        .select('started_at')
+        .eq('id', attempt.attempt_id)
+        .maybeSingle();
+
+      if (dbAttempt?.started_at) {
+        saveStartTime(new Date(dbAttempt.started_at).getTime());
+      } else {
+        saveStartTime(Date.now());
       }
 
       const { data: qs, error: qError } = await supabase
