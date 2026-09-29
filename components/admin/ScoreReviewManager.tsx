@@ -63,7 +63,7 @@ export default function ScoreReviewManager() {
       setPublishedAt((settings as any)?.published_at ?? null);
 
       // 2. Fetch teams
-      const { data: teams } = await supabase.from('teams').select('id, team_name, leader_name, leader_reg_no');
+      const { data: teams } = await supabase.from('teams').select('id, team_name, leader_name, leader_reg_no, is_locked');
 
       // Auto-migrate any legacy 'WINDEN' rows in DB to 'MAVERICKS'
       if (teams) {
@@ -133,6 +133,7 @@ export default function ScoreReviewManager() {
           team_name: t.team_name,
           leader_name: t.leader_name,
           leader_reg_no: t.leader_reg_no,
+          is_locked: Boolean(t.is_locked),
           r1_score: r1,
           r2_score: r2,
           r3_score: r3,
@@ -354,6 +355,14 @@ export default function ScoreReviewManager() {
     } finally {
       setUnpublishing(false);
     }
+  };
+
+  const handleToggleLockTeam = async (teamId: string, currentLock?: boolean) => {
+    const supabase = createClient();
+    const nextLock = !currentLock;
+    await supabase.from('teams').update({ is_locked: nextLock, login_status: nextLock ? false : true }).eq('id', teamId);
+    toast.success(nextLock ? '🔒 Team manually locked!' : '🔓 Team manually unlocked!');
+    loadData();
   };
 
   // Summary Metrics
@@ -592,6 +601,16 @@ export default function ScoreReviewManager() {
                     {/* Actions */}
                     <td className="py-3.5 px-4 text-right whitespace-nowrap">
                       <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => handleToggleLockTeam(item.team_id, item.is_locked)}
+                          className={`px-3 py-1.5 rounded-lg font-label-ticker text-xs font-bold border border-ink-primary shadow-[2px_2px_0px_#0F172A] transition-all cursor-pointer ${
+                            item.is_locked
+                              ? 'bg-amber-600 hover:bg-amber-700 text-white'
+                              : 'bg-rose-600 hover:bg-rose-700 text-white'
+                          }`}
+                        >
+                          {item.is_locked ? '🔓 Unlock' : '🔒 Lock'}
+                        </button>
                         <button
                           onClick={() => handleOpenEdit(item)}
                           disabled={isPublished}

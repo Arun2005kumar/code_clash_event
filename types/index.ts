@@ -174,6 +174,7 @@ export interface ScoreReviewItem {
   team_name: string;
   leader_name: string;
   leader_reg_no: string;
+  is_locked?: boolean;
   r1_score: number;
   r2_score: number;
   r3_score: number;

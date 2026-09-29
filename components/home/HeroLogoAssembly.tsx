@@ -77,12 +77,12 @@ export default function HeroLogoAssembly({ onLogoClick, parallaxX = 0, parallaxY
       <div className="inline-flex items-center gap-space-xs px-space-md py-1.5 bg-currency-gold/20 text-on-secondary-container rounded-full shadow-sm mb-space-md transform hover:scale-105 transition-transform duration-200 border border-ink-primary/30">
         <img src="/logo.png" alt="Code Clash Logo" className="w-6 h-6 object-contain" />
         <span className="font-label-ticker text-label-ticker uppercase tracking-wider text-ink-primary font-extrabold">
-          CODE CLASH PRESENTS
+          CODING CLUB PRESENTS
         </span>
       </div>
 
       {/* ── MAIN LOGO COCKPIT WITH HOLOGRAPHIC RINGS & SYMBOLS ── */}
-      <div className="relative flex items-center justify-center my-2 group cursor-pointer" onClick={handleLogoClick} onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)}>
+      <div className="relative flex items-center justify-center my-4 mb-10 sm:mb-12 group cursor-pointer" onClick={handleLogoClick} onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)}>
         
         {/* Holographic Circular Energy Ring */}
         <div
@@ -110,20 +110,29 @@ export default function HeroLogoAssembly({ onLogoClick, parallaxX = 0, parallaxY
           }}
         />
 
-        {/* 5 Holographic Team Assembly Badges Orbiting Logo */}
+        {/* 5 Holographic Team Assembly Badges Orbiting Logo cleanly */}
         {SYMBOLS.map((sym, idx) => {
           const isUnlocked = stage > idx;
+          // Position mapping:
+          // 0 (Scout): Top-Left
+          // 1 (Strategist): Top-Right
+          // 2 (Coder): Mid-Left
+          // 3 (Debugger): Mid-Right
+          // 4 (Finalist): Bottom-Center (above heading)
+          let posStyle: React.CSSProperties = {};
+          if (idx === 0) posStyle = { top: '-12%', left: '-18%' };
+          else if (idx === 1) posStyle = { top: '-12%', right: '-18%' };
+          else if (idx === 2) posStyle = { top: '35%', left: '-30%' };
+          else if (idx === 3) posStyle = { top: '35%', right: '-30%' };
+          else if (idx === 4) posStyle = { bottom: '-22%', left: '50%', transform: 'translateX(-50%)' };
+
           return (
             <div
               key={sym.id}
               className={`absolute z-20 transition-all duration-500 ease-out flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-black uppercase tracking-wider border shadow-md ${
                 sym.color
               } ${isUnlocked ? 'opacity-100 scale-100' : 'opacity-0 scale-50 ' + sym.dir}`}
-              style={{
-                top: idx === 0 ? '-15%' : idx === 1 ? '-15%' : idx === 2 ? '40%' : idx === 3 ? '40%' : '105%',
-                left: idx === 0 ? '-22%' : idx === 2 ? '-32%' : 'auto',
-                right: idx === 1 ? '-22%' : idx === 3 ? '-32%' : 'auto',
-              }}
+              style={posStyle}
             >
               <span className="material-symbols-outlined text-[15px]">{sym.icon}</span>
               <span>{sym.name}</span>

@@ -12,6 +12,7 @@ interface TeamRow {
   leader_name: string;
   leader_reg_no: string;
   login_status: boolean;
+  is_locked: boolean;
   last_seen_at?: string;
   created_at: string;
   r1_status?: string;
@@ -77,6 +78,7 @@ export default function AdminTeamsPage() {
           leader_name: t.leader_name,
           leader_reg_no: t.leader_reg_no,
           login_status: isOnline,
+          is_locked: Boolean(t.is_locked),
           last_seen_at: t.last_seen_at,
           created_at: t.created_at,
           r1_status: submittedR1?.status,
@@ -135,8 +137,16 @@ export default function AdminTeamsPage() {
   const handleResetViolations = async (teamId: string) => {
     const supabase = createClient();
     await supabase.from('anti_cheat_violations').delete().eq('team_id', teamId);
-    await supabase.from('teams').update({ login_status: true }).eq('id', teamId);
-    toast.success('Team violations cleared & team unlocked for continuation!');
+    await supabase.from('teams').update({ login_status: true, is_locked: false }).eq('id', teamId);
+    toast.success('Team violations cleared & team unlocked!');
+    loadTeams();
+  };
+
+  const handleToggleLockTeam = async (teamId: string, currentLock: boolean) => {
+    const supabase = createClient();
+    const nextLock = !currentLock;
+    await supabase.from('teams').update({ is_locked: nextLock, login_status: nextLock ? false : true }).eq('id', teamId);
+    toast.success(nextLock ? '🔒 Team manually locked!' : '🔓 Team manually unlocked!');
     loadTeams();
   };
 
@@ -200,7 +210,7 @@ export default function AdminTeamsPage() {
                 <th className="px-6 py-3.5 text-[11px] font-extrabold tracking-wider text-slate-500 uppercase whitespace-nowrap">R1 SCORE</th>
                 <th className="px-6 py-3.5 text-[11px] font-extrabold tracking-wider text-slate-500 uppercase whitespace-nowrap">R2 SCORE</th>
                 <th className="px-6 py-3.5 text-[11px] font-extrabold tracking-wider text-slate-500 uppercase whitespace-nowrap">COINS</th>
-                <th className="px-6 py-3.5 text-[11px] font-extrabold tracking-wider text-slate-500 uppercase whitespace-nowrap">VIOLATIONS</th>
+                <th className="px-6 py-3.5 text-[11px] font-extrabold tracking-wider text-slate-500 uppercase whitespace-nowrap">LOCK / VIOLATIONS</th>
                 <th className="px-6 py-3.5 text-[11px] font-extrabold tracking-wider text-slate-500 uppercase whitespace-nowrap">ACTIONS</th>
               </tr>
             </thead>
@@ -224,7 +234,7 @@ export default function AdminTeamsPage() {
               ) : filtered.map((team) => (
                 <tr
                   key={team.id}
-                  className="hover:bg-slate-50/80 transition-colors border-b border-slate-100"
+                  className={`hover:bg-slate-50/80 transition-colors border-b border-slate-100 ${team.is_locked ? 'bg-rose-50/30' : ''}`}
                 >
                   <td className="px-6 py-4 font-extrabold text-slate-900 whitespace-nowrap">
                     {team.is_flagged && <span className="mr-1.5">⚠️</span>}
@@ -238,10 +248,10 @@ export default function AdminTeamsPage() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${
-                      team.login_status ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'
+                      team.is_locked ? 'bg-rose-100 text-rose-700' : team.login_status ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'
                     }`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${team.login_status ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`} />
-                      <span>{team.login_status ? 'Online' : 'Offline'}</span>
+                      <span className={`w-1.5 h-1.5 rounded-full ${team.is_locked ? 'bg-rose-500' : team.login_status ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`} />
+                      <span>{team.is_locked ? 'Locked' : team.login_status ? 'Online' : 'Offline'}</span>
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -270,17 +280,25 @@ export default function AdminTeamsPage() {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`font-extrabold ${team.total_violations > 3 ? 'text-rose-600 font-black' : team.total_violations > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
-                      {team.total_violations > 3 ? '🚫 LOCKED OUT (' + team.total_violations + ')' : team.total_violations > 0 ? '⚠️ ' + team.total_violations : team.total_violations}
+                    <span className={`font-extrabold ${team.is_locked ? 'text-rose-600 font-black' : team.total_violations > 3 ? 'text-rose-600 font-black' : team.total_violations > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                      {team.is_locked ? '🔒 MANUAL LOCK' : team.total_violations > 3 ? '🚫 LOCKED (' + team.total_violations + ')' : team.total_violations > 0 ? '⚠️ ' + team.total_violations : 'CLEAN (0)'}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap flex items-center gap-2">
+                    <button
+                      onClick={() => handleToggleLockTeam(team.id, team.is_locked)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer shadow-xs ${
+                        team.is_locked ? 'bg-amber-600 hover:bg-amber-700 text-white' : 'bg-rose-600 hover:bg-rose-700 text-white'
+                      }`}
+                    >
+                      {team.is_locked ? '🔓 Unlock Team' : '🔒 Lock Team'}
+                    </button>
                     {team.total_violations > 0 && (
                       <button
                         onClick={() => handleResetViolations(team.id)}
                         className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-colors cursor-pointer shadow-xs"
                       >
-                        🔓 Allow Continuation
+                        Reset Violations
                       </button>
                     )}
                     <button

@@ -121,6 +121,14 @@ export default function HomePage() {
           existingTeam.team_name = 'MAVERICKS';
         }
 
+        // Check if team is manually locked by administrator
+        if (existingTeam.is_locked) {
+          toast.error('🚫 ACCESS DENIED: Your team has been locked manually by the administrator. Please contact event organizers.');
+          setLoading(false);
+          setFeedbackMsg('');
+          return;
+        }
+
         // Check if team is disqualified / locked out due to > 3 violations
         const { count: vCount } = await supabase
           .from('anti_cheat_violations')
